@@ -16,7 +16,7 @@ This code sample will show you how to create a Vitural Machine using Azure SDK f
 This project framework provides examples for the following services:
 
 ### Compute
-* Using the Azure SDK for .NET - Compute Management Library [azure-mgmt-compute](https://pypi.org/project/azure-mgmt-compute/) for the [Azure Compute API](https://docs.microsoft.com/en-us/rest/api/compute/)
+* You can find the details for the library [here](https://azure.github.io/azure-sdk/releases/latest/#dotnet).
 
 ## Getting Started
 
