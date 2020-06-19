@@ -1,92 +1,133 @@
 ---
 page_type: sample
 languages:
-- python
+- csharp
 products:
 - azure
-description: "These code samples will show you how to manage Compute using Azure SDK for Python."
+description: "This code samples will show you how to create a Vitural Machine using Azure SDK for .NET."
 urlFragment: compute
 ---
-# Getting started - Managing Compute using Azure Python SDK
+# Getting started - Managing Compute using Azure .NET SDK
 
-These code samples will show you how to manage Compute using Azure SDK for Python.
+This code sample will show you how to create a Vitural Machine using Azure SDK for .NET.
 
 ## Features
 
 This project framework provides examples for the following services:
 
 ### Compute
-* Using the Azure SDK for Python - Compute Management Library [azure-mgmt-compute](https://pypi.org/project/azure-mgmt-compute/) for the [Azure Compute API](https://docs.microsoft.com/en-us/rest/api/compute/)
-
-## Getting Started### Compute
-* Using the Azure SDK for Python - Compute Management Library [azure-mgmt-compute](https://pypi.org/project/azure-mgmt-compute/) for the [Azure Compute API](https://docs.microsoft.com/en-us/rest/api/compute/)
+* Using the Azure SDK for .NET - Compute Management Library [azure-mgmt-compute](https://pypi.org/project/azure-mgmt-compute/) for the [Azure Compute API](https://docs.microsoft.com/en-us/rest/api/compute/)
 
 ## Getting Started
 
 ### Prerequisites
 
-1. Before we run the samples, we need to make sure we have setup the credentials. Follow the instructions in [register a new application using Azure portal](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal) to obtain `subscription id`,`client id`,`client secret`, and `application id`
+You will need the following values to authenticate to Azure
 
-2. Store your credentials an environment variables.
-For example, in Linux-based OS, you can do
-```bash
-export AZURE_TENANT_ID="xxx"
-export AZURE_CLIENT_ID="xxx"
-export AZURE_CLIENT_SECRET="xxx"
-export SUBSCRIPTION_ID="xxx"
-```
+-   **Subscription ID**
+-   **Client ID**
+-   **Client Secret**
+-   **Tenant ID**
+
+These values can be obtained from the portal, here's the instructions:
+
+### Get Subscription ID
+
+1.  Login into your Azure account
+2.  Select Subscriptions in the left sidebar
+3.  Select whichever subscription is needed
+4.  Click on Overview
+5.  Copy the Subscription ID
+
+### Get Client ID / Client Secret / Tenant ID
+
+For information on how to get Client ID, Client Secret, and Tenant ID,
+please refer to [this
+document](https://docs.microsoft.com/azure/active-directory/develop/howto-create-service-principal-portal)
+
+### Setting Environment Variables
+
+After you obtained the values, you need to set the following values as
+your environment variables
+
+-   `AZURE_CLIENT_ID`
+-   `AZURE_CLIENT_SECRET`
+-   `AZURE_TENANT_ID`
+-   `AZURE_SUBSCRIPTION_ID`
+
+To set the following environment variables on your development system:
+
+Windows (Note: Administrator access is required)
+
+1.  Open the Control Panel
+2.  Click System Security, then System
+3.  Click Advanced system settings on the left
+4.  Inside the System Properties window, click the Environment
+    Variables… button.
+5.  Click on the property you would like to change, then click the Edit…
+    button. If the property name is not listed, then click the New…
+    button.
+
+Linux-based OS :
+
+    export AZURE_CLIENT_ID="__CLIENT_ID__"
+    export AZURE_CLIENT_SECRET="__CLIENT_SECRET__"
+    export AZURE_TENANT_ID="__TENANT_ID__"
+    export AZURE_SUBSCRIPTION_ID="__SUBSCRIPTION_ID__"
 
 ### Installation
 
-1.  If you don't already have it, [install Python](https://www.python.org/downloads/).
+To complete this tutorial:
 
-    This sample (and the SDK) is compatible with Python 2.7, 3.3, 3.4, 3.5 and 3.6.
+* Install .NET Core latest version for [Linux] or [Windows]
 
-2.  General recommendation for Python development is to use a Virtual Environment.
-    For more information, see https://docs.python.org/3/tutorial/venv.html
-
-    Install and initialize the virtual environment with the "venv" module on Python 3 (you must install [virtualenv](https://pypi.python.org/pypi/virtualenv) for Python 2.7):
-
-    ```
-    python -m venv mytestenv # Might be "python3" or "py -3.6" depending on your Python installation
-    cd mytestenv
-    source bin/activate      # Linux shell (Bash, ZSH, etc.) only
-    ./scripts/activate       # PowerShell only
-    ./scripts/activate.bat   # Windows CMD only
-    ```
+If you don't have an Azure subscription, create a [free account] before you begin.
 
 ### Quickstart
 
-### Prerequisites
+1. Clone the repository on your machine:
 
-1. Before we run the samples, we need to make sure we have setup the credentials. Follow the instructions in [register a new application using Azure portal](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal) to obtain `subscription id`,`client id`,`client secret`, and `application id`
-
-2. Store your credentials an environment variables.
-For example, in Linux-based OS, you can do
 ```bash
-export AZURE_TENANT_ID="xxx"
-export AZURE_CLIENT_ID="xxx"
-export AZURE_CLIENT_SECRET="xxx"
-export SUBSCRIPTION_ID="xxx"
+git clone https://github.com/Azure-Samples/azure-samples-net-management.git
 ```
 
-### Installation
+2. Switch to the project folder:
+```bash
+cd samples/create-virtual-machine
+```
+3. Repalce the ```AdminUsername``` and ```AdminPassowrd``` in the following code snip from Program.cs file.
+```csharp
+protected static string AdminUsername = "<username>";
+protected static string AdminPassword = "<password>";
+```
 
-1.  If you don't already have it, [install Python](https://www.python.org/downloads/).
+4. Run the application with the `dotnet run` command.
 
-    This sample (and the SDK) is compatible with Python 2.7, 3.3, 3.4, 3.5 and 3.6.
+```console
+dotnet run
+```
 
-2.  General recommendation for Python development is to use a Virtual Environment.
-    For more information, see https://docs.python.org/3/tutorial/venv.html
+## This sample shows how to do following operations to create a Virtual Machine
+- Create a Resource Group.
+- Create a AvailabilitySet.
+- Create a IP Address.
+- Create a Virtual Network.
+- Craete a Network Interface.
+- Create a Virtual Machine.
 
-    Install and initialize the virtual environment with the "venv" module on Python 3 (you must install [virtualenv](https://pypi.python.org/pypi/virtualenv) for Python 2.7):
+## More information
 
-    ```
-    python -m venv mytestenv # Might be "python3" or "py -3.6" depending on your Python installation
-    cd mytestenv
-    source bin/activate      # Linux shell (Bash, ZSH, etc.) only
-    ./scripts/activate       # PowerShell only
-    ./scripts/activate.bat   # Windows CMD only
-    ```
+The [Azure Compute documentation] includes a rich set of tutorials and conceptual articles, which serve as a good complement to the samples.
 
-### Quickstart
+This project has adopted the [Microsoft Open Source Code of Conduct].
+For more information see the [Code of Conduct FAQ] or contact [opencode@microsoft.com] with any additional questions or comments.
+
+<!-- LINKS -->
+[Linux]: https://dotnet.microsoft.com/download
+[Windows]: https://dotnet.microsoft.com/download
+[free account]: https://azure.microsoft.com/free/?WT.mc_id=A261C142F
+[Azure Portal]: https://portal.azure.com
+[Azure Compute documentation]: https://docs.microsoft.com/azure/?product=compute
+[Microsoft Open Source Code of Conduct]: https://opensource.microsoft.com/codeofconduct/
+[Code of Conduct FAQ]: https://opensource.microsoft.com/codeofconduct/faq/
+[opencode@microsoft.com]: mailto:opencode@microsoft.com
