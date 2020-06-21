@@ -5,7 +5,7 @@ languages:
 products:
 - azure
 description: "This code samples will show you how to create a Vitural Machine using Azure SDK for .NET."
-urlFragment: compute
+urlFragment: compute-create-vm
 ---
 # Getting started - Managing Compute using Azure .NET SDK
 
@@ -93,9 +93,9 @@ git clone https://github.com/Azure-Samples/azure-samples-net-management.git
 
 2. Switch to the project folder:
 ```bash
-cd samples/create-virtual-machine
+cd samples/compute/create-virtual-machine
 ```
-3. Repalce the ```AdminUsername``` and ```AdminPassowrd``` in the following code snip from Program.cs file.
+3. Replace the ```AdminUsername``` and ```AdminPassowrd``` in the following code snip from Program.cs file.
 ```csharp
 protected static string AdminUsername = "<username>";
 protected static string AdminPassword = "<password>";
