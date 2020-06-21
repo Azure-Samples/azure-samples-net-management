@@ -7,7 +7,7 @@ products:
 description: "This code samples will show you how to create a Vitural Machine using Azure SDK for .NET."
 urlFragment: compute-create-vm
 ---
-# Getting started - Managing Compute using Azure .NET SDK
+# Getting started - Managing Compute Resources using Azure .NET SDK
 
 This code sample will show you how to create a Vitural Machine using Azure SDK for .NET.
 
