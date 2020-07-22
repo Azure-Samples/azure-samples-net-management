@@ -7,7 +7,7 @@ using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,16 +17,15 @@ namespace ManageIPAddress
 {
     public class Program
     {
-        /**
-         * Azure Network sample for managing IP address -
-         *  - Assign a public IP address for a virtual machine during its creation
-         *  - Assign a public IP address for a virtual machine through an virtual machine update action
-         *  - Get the associated public IP address for a virtual machine
-         *  - Get the assigned public IP address for a virtual machine
-         *  - Remove a public IP address from a virtual machine.
-         */
+        //Azure Network sample for managing IP address -
+        //   - Assign a public IP address for a virtual machine during its creation
+        //   - Assign a public IP address for a virtual machine through an virtual machine update action
+        //   - Get the associated public IP address for a virtual machine
+        //   - Get the assigned public IP address for a virtual machine
+        //   - Remove a public IP address from a virtual machine.
+
         private static readonly string UserName = "tirekicker";
-        private static readonly string Password = "12NewPA$$w0rd!";
+        private static readonly string Password = "<password>";
         private static readonly string SubscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
         public static async Task RunSample(TokenCredential credential)
@@ -50,7 +49,6 @@ namespace ManageIPAddress
             {
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, "eastus");
 
-                //============================================================
                 // Assign a public IP address for a VM during its creation
 
                 // Define a public IP address to be used during VM creation time
@@ -158,7 +156,6 @@ namespace ManageIPAddress
                 // Print virtual machine details
                 Utilities.PrintVirtualMachine(vm);
 
-                //============================================================
                 // Gets the public IP address associated with the VM's primary NIC
 
                 Utilities.Log("Public IP address associated with the VM's primary NIC [After create]");
@@ -168,7 +165,6 @@ namespace ManageIPAddress
 
                 Utilities.PrintIPAddress(publicIPDetail);
 
-                //============================================================
                 // Assign a new public IP address for the VM
 
                 // Define a new public IP address
@@ -209,7 +205,6 @@ namespace ManageIPAddress
 
                 await (await networkInterfaces.StartCreateOrUpdateAsync(rgName, networkInterfaceName, networkInterface)).WaitForCompletionAsync();
 
-                //============================================================
                 // Gets the updated public IP address associated with the VM
 
                 // Get the associated public IP address for a virtual machine
@@ -219,7 +214,6 @@ namespace ManageIPAddress
 
                 Utilities.PrintIPAddress(publicIPDetail);
 
-                //============================================================
                 // Remove public IP associated with the VM
 
                 Utilities.Log("Removing public IP address associated with the VM");
@@ -243,7 +237,6 @@ namespace ManageIPAddress
 
                 Utilities.Log("Removed public IP address associated with the VM");
 
-                //============================================================
                 // Delete the public ip
                 Utilities.Log("Deleting the public IP address");
                 await (await publicIPAddresses.StartDeleteAsync(rgName, publicIPAddressName1)).WaitForCompletionAsync();
@@ -270,7 +263,6 @@ namespace ManageIPAddress
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

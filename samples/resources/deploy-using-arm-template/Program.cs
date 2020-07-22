@@ -5,7 +5,7 @@ using Azure.Core;
 using Azure.Identity;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Resources.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Threading.Tasks;
 
@@ -27,7 +27,6 @@ namespace DeployUsingARMTemplate
 
             try
             {
-                //=============================================================
                 // Create resource group.
 
                 Utilities.Log("Creating a resource group with name: " + rgName);
@@ -37,7 +36,6 @@ namespace DeployUsingARMTemplate
 
                 Utilities.Log("Created a resource group with name: " + rgName);
 
-                //=============================================================
                 // Create a deployment for an Azure App Service via an ARM
                 // template.
 
@@ -77,7 +75,6 @@ namespace DeployUsingARMTemplate
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

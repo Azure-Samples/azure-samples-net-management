@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Samples.Helpers
+namespace Samples.Utilities
 {
     public class ResourceNamer
     {

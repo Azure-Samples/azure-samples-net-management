@@ -7,7 +7,7 @@ using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,17 +18,16 @@ namespace ManageVirtualMachineExtension
     public class Program
     {
         // Linux configurations
-        //
         readonly static string FirstLinuxUserName = "tirekicker";
-        readonly static string FirstLinuxUserPassword = "12NewPA$$w0rd!";
-        readonly static string FirstLinuxUserNewPassword = "muy!234OR";
+        readonly static string FirstLinuxUserPassword = "<password>";
+        readonly static string FirstLinuxUserNewPassword = "<password>";
 
         readonly static string SecondLinuxUserName = "seconduser";
-        readonly static string SecondLinuxUserPassword = "B12a6@12xyz!";
+        readonly static string SecondLinuxUserPassword = "<password>";
         readonly static string SecondLinuxUserExpiration = "2020-12-31";
 
         readonly static string ThirdLinuxUserName = "thirduser";
-        readonly static string ThirdLinuxUserPassword = "12xyz!B12a6@";
+        readonly static string ThirdLinuxUserPassword = "<password>";
         readonly static string ThirdLinuxUserExpiration = "2020-12-31";
 
         readonly static string LinuxCustomScriptExtensionName = "CustomScriptForLinux";
@@ -59,31 +58,29 @@ namespace ManageVirtualMachineExtension
         readonly static string linuxVmAccessExtensionVersionName = "1.4";
 
         // Windows configurations
-        //
         readonly static string firstWindowsUserName = "tirekicker";
-        readonly static string firstWindowsUserPassword = "12NewPA$$w0rd!";
-        readonly static string firstWindowsUserNewPassword = "muy!234OR";
+        readonly static string firstWindowsUserPassword = "<password>";
+        readonly static string firstWindowsUserNewPassword = "<password>";
 
         readonly static string secondWindowsUserName = "seconduser";
-        readonly static string secondWindowsUserPassword = "B12a6@12xyz!";
+        readonly static string secondWindowsUserPassword = "<password>";
 
         readonly static string thirdWindowsUserName = "thirduser";
-        readonly static string thirdWindowsUserPassword = "12xyz!B12a6@";
+        readonly static string thirdWindowsUserPassword = "<password>";
 
         readonly static string windowsVmAccessExtensionName = "VMAccessAgent";
         readonly static string windowsVmAccessExtensionPublisherName = "Microsoft.Compute";
         readonly static string windowsVmAccessExtensionTypeName = "VMAccessAgent";
         readonly static string windowsVmAccessExtensionVersionName = "2.3";
 
-        /**
-         * Azure Compute sample for managing virtual machine extensions. -
-         *  - Create a Linux and Windows virtual machine
-         *  - Add three users (user names and passwords for windows, SSH keys for Linux)
-         *  - Resets user credentials
-         *  - Remove a user
-         *  - Install MySQL on Linux | something significant on Windows
-         *  - Remove extensions
-         */
+        //Azure Compute sample for managing virtual machine extensions. -
+        //   - Create a Linux and Windows virtual machine
+        //   - Add three users(user names and passwords for windows, SSH keys for Linux)
+        //   - Resets user credentials
+        //   - Remove a user
+        //   - Install MySQL on Linux | something significant on Windows
+        //   - Remove extensions
+
         public static async Task RunSample(TokenCredential credential)
         {
             string rgName = Utilities.RandomResourceName("rgCOVE", 15);
@@ -105,7 +102,6 @@ namespace ManageVirtualMachineExtension
             {
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, location);
 
-                //=============================================================
                 // Create a Linux VM with root (sudo) user
 
                 // Create IP Address
@@ -165,7 +161,6 @@ namespace ManageVirtualMachineExtension
                 Utilities.Log("Created a Network Interface");
 
                 // Create VM
-
                 Utilities.Log("Creating a Linux VM");
 
                 var linuxVM = new VirtualMachine(location)
@@ -201,7 +196,6 @@ namespace ManageVirtualMachineExtension
                 Utilities.Log("Created a Linux VM:" + linuxVM.Id);
                 Utilities.PrintVirtualMachine(linuxVM);
 
-                //=============================================================
                 // Add a second sudo user to Linux VM using VMAccess extension
 
                 var vmExtension = new VirtualMachineExtension(location)
@@ -222,7 +216,6 @@ namespace ManageVirtualMachineExtension
 
                 Utilities.Log("Added a second sudo user to the Linux VM");
 
-                //=============================================================
                 // Add a third sudo user to Linux VM by updating VMAccess extension
 
                 var vmExtensionUpdate = new VirtualMachineExtensionUpdate
@@ -240,7 +233,6 @@ namespace ManageVirtualMachineExtension
 
                 Utilities.Log("Added a third sudo user to the Linux VM");
 
-                //=============================================================
                 // Reset ssh password of first user of Linux VM by updating VMAccess extension
 
                 vmExtensionUpdate = new VirtualMachineExtensionUpdate
@@ -258,7 +250,6 @@ namespace ManageVirtualMachineExtension
 
                 Utilities.Log("Password of first user of Linux VM has been updated");
 
-                //=============================================================
                 // Removes the second sudo user from Linux VM using VMAccess extension
 
                 vmExtensionUpdate = new VirtualMachineExtensionUpdate
@@ -274,7 +265,6 @@ namespace ManageVirtualMachineExtension
 
                 Utilities.Log("Removed the second user from Linux VM using VMAccess extension");
 
-                //=============================================================
                 // Install MySQL in Linux VM using CustomScript extension
 
                 vmExtension = new VirtualMachineExtension(location)
@@ -296,7 +286,6 @@ namespace ManageVirtualMachineExtension
                 Utilities.Log("Installed MySql using custom script extension");
                 Utilities.PrintVirtualMachine(linuxVM);
 
-                //=============================================================
                 // Removes the extensions from Linux VM
 
                 await (await virtualMachineExtensions
@@ -307,7 +296,6 @@ namespace ManageVirtualMachineExtension
                 Utilities.Log("Removed the custom script and VM Access extensions from Linux VM");
                 Utilities.PrintVirtualMachine(linuxVM);
 
-                //=============================================================
                 // Create a Windows VM with admin user
 
                 // Create IP Address
@@ -403,7 +391,6 @@ namespace ManageVirtualMachineExtension
                 Utilities.Log("Created a Windows VM:" + windowsVM.Id);
                 Utilities.PrintVirtualMachine(windowsVM);
 
-                //=============================================================
                 // Add a second admin user to Windows VM using VMAccess extension
 
                 vmExtension = new VirtualMachineExtension(location)
@@ -424,7 +411,6 @@ namespace ManageVirtualMachineExtension
 
                 Utilities.Log("Added a second admin user to the Windows VM");
 
-                //=============================================================
                 // Add a third admin user to Windows VM by updating VMAccess extension
 
                 vmExtensionUpdate = new VirtualMachineExtensionUpdate
@@ -441,7 +427,6 @@ namespace ManageVirtualMachineExtension
 
                 Utilities.Log("Added a third admin user to the Windows VM");
 
-                //=============================================================
                 // Reset admin password of first user of Windows VM by updating VMAccess extension
 
                 vmExtensionUpdate = new VirtualMachineExtensionUpdate
@@ -459,7 +444,6 @@ namespace ManageVirtualMachineExtension
 
                 Utilities.Log("Password of first user of Windows VM has been updated");
 
-                //=============================================================
                 // Removes the extensions from Linux VM
 
                 await (await virtualMachineExtensions
@@ -489,7 +473,6 @@ namespace ManageVirtualMachineExtension
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

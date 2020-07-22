@@ -7,23 +7,22 @@ using Azure.ResourceManager.EventHubs;
 using Azure.ResourceManager.EventHubs.Models;
 using Azure.ResourceManager.Storage;
 using Azure.ResourceManager.Storage.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ManageEventHub
 {
-    /**
-     * Azure Event Hub sample for managing event hub -
-     *   - Create an event hub namespace
-     *   - Create an event hub in the namespace with data capture enabled along with a consumer group and rule
-     *   - List consumer groups in the event hub
-     *   - Create a second event hub in the namespace
-     *   - Create a consumer group in the second event hub
-     *   - List consumer groups in the second event hub
-     *   - Create an event hub namespace along with event hub.
-     */
+    //  Azure Event Hub sample for managing event hub -
+    //    - Create an event hub namespace
+    //    - Create an event hub in the namespace with data capture enabled along with a consumer group and rule
+    //    - List consumer groups in the event hub
+    //    - Create a second event hub in the namespace
+    //    - Create a consumer group in the second event hub
+    //    - List consumer groups in the second event hub
+    //    - Create an event hub namespace along with event hub.
+
     public class Program
     {
         public static async Task RunSample(TokenCredential credential)
@@ -49,9 +48,7 @@ namespace ManageEventHub
             {
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
 
-                //============================================================
                 // Create an event hub namespace
-                //
 
                 Utilities.Log("Creating a namespace");
 
@@ -67,9 +64,7 @@ namespace ManageEventHub
                 Utilities.Print(namespace1);
                 Utilities.Log("Created a namespace");
 
-                //============================================================
                 // Create an event hub in the namespace with data capture enabled, with consumer group and auth rule
-                //
 
                 var storageAccountCreatable = (await (await storageAccounts.StartCreateAsync(
                     rgName,
@@ -144,9 +139,7 @@ namespace ManageEventHub
 
                 Utilities.Print(result);
 
-                //============================================================
                 // Retrieve consumer groups in the event hub
-                //
                 Utilities.Log("Retrieving consumer groups");
 
                 var listResult = await consumerGroups.ListByEventHubAsync(rgName, namespaceName1, eventHubName1).ToEnumerableAsync();
@@ -158,9 +151,7 @@ namespace ManageEventHub
                     Utilities.Print(group);
                 }
 
-                //============================================================
                 // Create another event hub in the namespace
-                //
 
                 Utilities.Log("Creating another event hub in the namespace");
 
@@ -174,9 +165,7 @@ namespace ManageEventHub
                 Utilities.Log("Created second event hub");
                 Utilities.Print(eventHub2);
 
-                //============================================================
                 // Create a consumer group in the event hub
-                //
 
                 Utilities.Log("Creating a consumer group in the second event hub");
 
@@ -195,9 +184,7 @@ namespace ManageEventHub
                 Utilities.Log("Created a consumer group in the second event hub");
                 Utilities.Print(consumerGroup2);
 
-                //============================================================
                 // Retrieve consumer groups in the event hub
-                //
                 Utilities.Log("Retrieving consumer groups in the second event hub");
 
                 listResult = await consumerGroups.ListByEventHubAsync(rgName, namespaceName1, eventHubName2).ToEnumerableAsync();
@@ -209,9 +196,7 @@ namespace ManageEventHub
                     Utilities.Print(group);
                 }
 
-                //============================================================
                 // Create an event hub namespace with event hub
-                //
 
                 Utilities.Log("Creating an event hub namespace along with event hub");
 
@@ -262,7 +247,6 @@ namespace ManageEventHub
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

@@ -96,11 +96,9 @@ git clone https://github.com/Azure-Samples/azure-samples-net-management.git
 cd samples/network/manage-ip-address
 ```
 
-3. Run the application with the `dotnet run` command.
+3. Replace all the ```<password>``` placeholder with a valid password in the Program.cs file.  
 
-```console
-dotnet run
-```
+4. Run the application with the `dotnet run` command.
 
 ## This sample shows how to do following operations to manage IP Addess
  - Assign a public IP address for a virtual machine during its creation.

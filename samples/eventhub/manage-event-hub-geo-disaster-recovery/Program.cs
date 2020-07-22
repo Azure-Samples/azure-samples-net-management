@@ -5,7 +5,7 @@ using Azure.Core;
 using Azure.Identity;
 using Azure.ResourceManager.EventHubs;
 using Azure.ResourceManager.EventHubs.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,14 +14,12 @@ namespace ManageEventHubGeoDisasterRecovery
 {
     public class Program
     {
-        /**
-         * Azure Event Hub sample for managing geo disaster recovery pairing -
-         *   - Create two event hub namespaces
-         *   - Create a pairing between two namespaces
-         *   - Create an event hub in the primary namespace and retrieve it from the secondary namespace
-         *   - Retrieve the pairing connection string
-         *   - Fail over so that secondary namespace become primary.
-         */
+        //Azure Event Hub sample for managing geo disaster recovery pairing -
+        //    - Create two event hub namespaces
+        //    - Create a pairing between two namespaces
+        //    - Create an event hub in the primary namespace and retrieve it from the secondary namespace
+        //    - Retrieve the pairing connection string
+        //    - Fail over so that secondary namespace become primary.
         public static async Task RunSample(TokenCredential credential)
         {
             string region = "eastus";
@@ -44,9 +42,7 @@ namespace ManageEventHubGeoDisasterRecovery
             {
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
 
-                //============================================================
                 // Create resource group for the namespaces and recovery pairings
-                //
 
                 Utilities.Log($"Creating primary event hub namespace {primaryNamespaceName}");
 
@@ -76,9 +72,7 @@ namespace ManageEventHubGeoDisasterRecovery
                 Utilities.Log("Secondary event hub namespace created");
                 Utilities.Print(secondaryNamespace);
 
-                //============================================================
                 // Create primary and secondary namespaces and recovery pairing
-                //
 
                 Utilities.Log($"Creating geo-disaster recovery pairing {geoDRName}");
 
@@ -104,9 +98,7 @@ namespace ManageEventHubGeoDisasterRecovery
                 Utilities.Log($"Created geo-disaster recovery pairing {geoDRName}");
                 Utilities.Print(pairing);
 
-                //============================================================
                 // Create an event hub and consumer group in primary namespace
-                //
 
                 Utilities.Log("Creating an event hub and consumer group in primary namespace");
 
@@ -139,9 +131,7 @@ namespace ManageEventHubGeoDisasterRecovery
                 Utilities.Log("Retrieved the event hubs in secondary namespace");
                 Utilities.Print(eventHubInSecondaryNamespace);
 
-                //============================================================
                 // Retrieving the connection string
-                //
 
                 var rules = await disasterRecoveryConfigs.ListAuthorizationRulesAsync(rgName, primaryNamespaceName, geoDRName).ToEnumerableAsync();
                 foreach (var rule in rules)
@@ -177,7 +167,6 @@ namespace ManageEventHubGeoDisasterRecovery
                     try
                     {
                         // It is necessary to break pairing before deleting resource group
-                        //
                         if (pairing != null && !isFailOverSucceeded)
                         {
                             await disasterRecoveryConfigs.BreakPairingAsync(rgName, primaryNamespaceName, geoDRName);
@@ -213,7 +202,6 @@ namespace ManageEventHubGeoDisasterRecovery
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

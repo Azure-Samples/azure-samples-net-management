@@ -5,7 +5,7 @@ using Azure.Core;
 using Azure.Identity;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Resources.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,14 +14,13 @@ namespace ManageResourceGroup
 {
     public class Program
     {
-        /**
-         * Azure Resource sample for managing resource groups -
-         * - Create a resource group
-         * - Update a resource group
-         * - Create another resource group
-         * - List resource groups
-         * - Delete a resource group.
-         */
+        //Azure Resource sample for managing resource groups -
+        //  - Create a resource group
+        //  - Update a resource group
+        //  - Create another resource group
+        //  - List resource groups
+        //  - Delete a resource group.
+
         public static async Task RunSample(TokenCredential credential)
         {
             var rgName = Utilities.RandomResourceName("rgRSMA", 24);
@@ -36,7 +35,6 @@ namespace ManageResourceGroup
 
             try
             {
-                //=============================================================
                 // Create resource group.
 
                 Utilities.Log("Creating a resource group with name: " + rgName);
@@ -46,7 +44,6 @@ namespace ManageResourceGroup
 
                 Utilities.Log("Created a resource group with name: " + rgName);
 
-                //=============================================================
                 // Update the resource group.
 
                 Utilities.Log("Updating the resource group with name: " + rgName);
@@ -62,7 +59,6 @@ namespace ManageResourceGroup
 
                 Utilities.Log("Updated the resource group with name: " + rgName);
 
-                //=============================================================
                 // Create another resource group.
 
                 Utilities.Log("Creating another resource group with name: " + rgName2);
@@ -72,7 +68,6 @@ namespace ManageResourceGroup
 
                 Utilities.Log("Created another resource group with name: " + rgName2);
 
-                //=============================================================
                 // List resource groups.
 
                 Utilities.Log("Listing all resource groups");
@@ -84,7 +79,6 @@ namespace ManageResourceGroup
                     Utilities.Log("Resource group: " + rGroup.Name);
                 }
 
-                //=============================================================
                 // Delete a resource group.
 
                 Utilities.Log("Deleting resource group: " + rgName2);
@@ -114,7 +108,6 @@ namespace ManageResourceGroup
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

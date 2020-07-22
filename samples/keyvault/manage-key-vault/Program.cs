@@ -5,7 +5,7 @@ using Azure.Core;
 using Azure.Identity;
 using Azure.ResourceManager.KeyVault;
 using Azure.ResourceManager.KeyVault.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Threading.Tasks;
 
@@ -13,17 +13,15 @@ namespace ManageKeyVault
 {
     public class Program
     {
-        /**
-         * Azure Key Vault sample for managing key vaults -
-         *  - Create a key vault
-         *  - Authorize an application
-         *  - Update a key vault
-         *    - alter configurations
-         *    - change permissions
-         *  - Create another key vault
-         *  - List key vaults
-         *  - Delete a key vault.
-         */
+        //Azure Key Vault sample for managing key vaults -
+        //   - Create a key vault
+        //   - Authorize an application
+        //   - Update a key vault
+        //     - alter configurations
+        //     - change permissions
+        //   - Create another key vault
+        //   - List key vaults
+        //   - Delete a key vault.
         public static async Task RunSample(TokenCredential credential)
         {
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
@@ -42,7 +40,6 @@ namespace ManageKeyVault
             {
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
 
-                //============================================================
                 // Create a key vault with empty access policy
 
                 Utilities.Log("Creating a key vault...");
@@ -59,7 +56,6 @@ namespace ManageKeyVault
                 Utilities.Log("Created key vault");
                 Utilities.PrintVault(vault1);
 
-                //============================================================
                 // Authorize an application
 
                 Utilities.Log("Authorizing the application associated with the current service principal...");
@@ -79,7 +75,6 @@ namespace ManageKeyVault
                 Utilities.Log("Updated key vault");
                 Utilities.PrintVault(vault1);
 
-                //============================================================
                 // Update a key vault
 
                 Utilities.Log("Update a key vault to enable deployments and add permissions to the application...");
@@ -106,7 +101,6 @@ namespace ManageKeyVault
                 // Print the network security group
                 Utilities.PrintVault(vault1);
 
-                //============================================================
                 // Create another key vault
 
                 Utilities.Log("Create another key vault");
@@ -130,7 +124,6 @@ namespace ManageKeyVault
                 // Print the network security group
                 Utilities.PrintVault(vault2);
 
-                //============================================================
                 // List key vaults
 
                 Utilities.Log("Listing key vaults...");
@@ -140,7 +133,6 @@ namespace ManageKeyVault
                     Utilities.PrintVault(vault);
                 }
 
-                //============================================================
                 // Delete key vaults
                 Utilities.Log("Deleting the key vaults");
                 await vaults.DeleteAsync(rgName, vaultName1);
@@ -170,7 +162,6 @@ namespace ManageKeyVault
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

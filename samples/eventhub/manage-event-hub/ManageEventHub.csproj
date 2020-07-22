@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Helpers\Helpers.csproj" />
+    <ProjectReference Include="..\..\utilities\Utilities.csproj" />
   </ItemGroup>
 
 </Project>

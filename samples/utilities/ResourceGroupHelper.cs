@@ -7,7 +7,7 @@ using Azure.ResourceManager.Resources.Models;
 using System;
 using System.Threading.Tasks;
 
-namespace Samples.Helpers
+namespace Samples.Utilities
 {
     public class ResourceGroupHelper
     {

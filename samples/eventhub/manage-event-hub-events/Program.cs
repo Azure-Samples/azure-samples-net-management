@@ -8,7 +8,7 @@ using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.ResourceManager.EventHubs;
 using Azure.ResourceManager.EventHubs.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,12 +17,11 @@ using System.Threading.Tasks;
 
 namespace ManageEventHubEvents
 {
-    /**
-     * Azure Event Hub sample for managing event hub models.
-     *   - Create a Event Hub namespace and an Event Hub in it
-     *   - Create Authorization Rule and get key
-     *   - Send events to Event Hub and read them
-     */
+    //Azure Event Hub sample for managing event hub models.
+    //    - Create a Event Hub namespace and an Event Hub in it
+    //    - Create Authorization Rule and get key
+    //    - Send events to Event Hub and read them
+
     public class Program
     {
         public static async Task RunSample(TokenCredential credential)
@@ -41,9 +40,7 @@ namespace ManageEventHubEvents
             {
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
 
-                //=============================================================
                 // Creates a Event Hub namespace and an Event Hub in it.
-                //
                 Utilities.Log("Creating event hub namespace and event hub");
 
                 Utilities.Log("Creating a namespace");
@@ -75,9 +72,7 @@ namespace ManageEventHubEvents
                 Utilities.Log($"Created event hub namespace {ehNamespace.Name} and event hub {eventHubName}");
                 Utilities.Print(ehNamespace);
 
-                //=============================================================
                 // Create a Authorization Rule for Event Hub created.
-                //
                 Utilities.Log("Creating a Authorization Rule");
 
                 var listenRule = (await eventHubs.CreateOrUpdateAuthorizationRuleAsync(
@@ -93,9 +88,7 @@ namespace ManageEventHubEvents
 
                 Utilities.Log("Created a Authorization Rule");
 
-                //=============================================================
                 // Send events using dataplane eventhub sdk.
-                //
                 Utilities.Log("Sending events");
 
                 var keys = (await eventHubs.ListKeysAsync(rgName, namespaceName, eventHubName, listenRule.Name)).Value;
@@ -151,7 +144,6 @@ namespace ManageEventHubEvents
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

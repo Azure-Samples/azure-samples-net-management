@@ -7,7 +7,7 @@ using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,14 +17,13 @@ namespace ManageVirtualNetwork
 {
     public class Program
     {
-        /**
-        * Azure Network sample for managing virtual networks.
-        *  - Create a virtual network with Subnets
-        *  - Update a virtual network
-        *  - Create virtual machines in the virtual network subnets
-        *  - Create another virtual network
-        *  - List virtual networks
-        */
+        //Azure Network sample for managing virtual networks.
+        //  - Create a virtual network with Subnets
+        //  - Update a virtual network
+        //  - Create virtual machines in the virtual network subnets
+        //  - Create another virtual network
+        //  - List virtual networks
+
         private static readonly string SubscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
         private static readonly string VNet1FrontEndSubnetName = "frontend";
         private static readonly string VNet1BackEndSubnetName = "backend";
@@ -54,7 +53,6 @@ namespace ManageVirtualNetwork
             {
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(ResourceGroupName, "eastus");
 
-                //============================================================
                 // Create a virtual network with specific address-space and two subnet
 
                 // Creates a network security group for backend subnet
@@ -167,7 +165,6 @@ namespace ManageVirtualNetwork
                 // Print the virtual network details
                 Utilities.PrintVirtualNetwork(virtualNetwork1);
 
-                //============================================================
                 // Update a virtual network
 
                 // Update the virtual network frontend subnet by associating it with network security group
@@ -203,7 +200,6 @@ namespace ManageVirtualNetwork
                 // Print the virtual network details
                 Utilities.PrintVirtualNetwork(virtualNetwork1);
 
-                //============================================================
                 // Create a virtual machine in each subnet
 
                 // Creates the first virtual machine in frontend subnet
@@ -404,7 +400,6 @@ namespace ManageVirtualNetwork
                 // Print the virtual network details
                 Utilities.PrintVirtualNetwork(virtualNetwork2);
 
-                //============================================================
                 // List virtual networks
 
                 Utilities.Log("List virtual networks");
@@ -414,7 +409,6 @@ namespace ManageVirtualNetwork
                     Utilities.PrintVirtualNetwork(virtualNetwork);
                 }
 
-                //============================================================
                 // Delete a virtual network
                 Utilities.Log("Deleting the virtual network");
                 await (await virtualNetworks.StartDeleteAsync(ResourceGroupName, vnetName2)).WaitForCompletionAsync();
@@ -441,7 +435,6 @@ namespace ManageVirtualNetwork
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

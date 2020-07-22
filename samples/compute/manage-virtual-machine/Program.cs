@@ -7,7 +7,7 @@ using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,19 +17,19 @@ namespace ManageVirtualMachine
 {
     public class Program
     {
-        /**
-        * Azure Compute sample for managing virtual machines -
-        *  - Create a virtual machine with managed OS Disk
-        *  - Start a virtual machine
-        *  - Stop a virtual machine
-        *  - Restart a virtual machine
-        *  - Update a virtual machine
-        *    - Tag a virtual machine (there are many possible variations here)
-        *    - Attach data disks
-        *    - Detach data disks
-        *  - List virtual machines
-        *  - Delete a virtual machine.
-        */
+
+        //Azure Compute sample for managing virtual machines -
+        //  - Create a virtual machine with managed OS Disk
+        //  - Start a virtual machine
+        //  - Stop a virtual machine
+        //  - Restart a virtual machine
+        //  - Update a virtual machine
+        //    - Tag a virtual machine(there are many possible variations here)
+        //    - Attach data disks
+        //    - Detach data disks
+        //  - List virtual machines
+        //  - Delete a virtual machine.
+
         public static async Task RunSample(TokenCredential credential)
         {
             var region = "westcentralus";
@@ -37,7 +37,7 @@ namespace ManageVirtualMachine
             var linuxVmName = Utilities.CreateRandomName("lVM");
             var rgName = Utilities.CreateRandomName("rgCOMV");
             var userName = "tirekicker";
-            var password = "12NewPA$$w0rd!";
+            var password = "<password>";
             var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
             var networkManagementClient = new NetworkManagementClient(subscriptionId, credential);
@@ -51,11 +51,9 @@ namespace ManageVirtualMachine
             {
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
 
-                //=============================================================
                 // Create a Windows virtual machine
 
                 // Create a data disk to attach to VM
-                //
                 Utilities.Log("Creating a data disk");
 
                 var dataDisk = new Disk(region)
@@ -69,7 +67,6 @@ namespace ManageVirtualMachine
                 Utilities.Log("Created a data disk");
 
                 // Create VNet
-                //
                 Utilities.Log("Creating a VNet");
 
                 var vnet = new VirtualNetwork
@@ -91,7 +88,6 @@ namespace ManageVirtualMachine
                 Utilities.Log("Created a VNet");
 
                 // Create Network Interface
-                //
                 Utilities.Log("Creating a Network Interface");
 
                 var nic = new NetworkInterface
@@ -116,7 +112,6 @@ namespace ManageVirtualMachine
                 var t1 = new DateTime();
 
                 // Create VM
-                //
                 Utilities.Log("Creating a Windows VM");
 
                 var windowsVM = new VirtualMachine(region)
@@ -174,7 +169,6 @@ namespace ManageVirtualMachine
                 // Print virtual machine details
                 Utilities.PrintVirtualMachine(windowsVM);
 
-                //=============================================================
                 // Update - Tag the virtual machine
 
                 var update = new VirtualMachineUpdate
@@ -190,7 +184,6 @@ namespace ManageVirtualMachine
 
                 Utilities.Log("Tagged VM: " + windowsVM.Id);
 
-                //=============================================================
                 // Update - Add data disk
 
                 windowsVM.StorageProfile.DataDisks.Add(new DataDisk(3, DiskCreateOptionTypes.Empty) { DiskSizeGB = 10 });
@@ -200,7 +193,6 @@ namespace ManageVirtualMachine
                 Utilities.Log("Added a data disk to VM" + windowsVM.Id);
                 Utilities.PrintVirtualMachine(windowsVM);
 
-                //=============================================================
                 // Update - detach data disk
                 var removeDisk = windowsVM.StorageProfile.DataDisks.First(x => x.Lun == 0);
                 windowsVM.StorageProfile.DataDisks.Remove(removeDisk);
@@ -209,7 +201,6 @@ namespace ManageVirtualMachine
 
                 Utilities.Log("Detached data disk at lun 0 from VM " + windowsVM.Id);
 
-                //=============================================================
                 // Restart the virtual machine
 
                 Utilities.Log("Restarting VM: " + windowsVM.Id);
@@ -217,7 +208,6 @@ namespace ManageVirtualMachine
 
                 Utilities.Log("Restarted VM: " + windowsVM.Id);
 
-                //=============================================================
                 // Stop (powerOff) the virtual machine
 
                 Utilities.Log("Powering OFF VM: " + windowsVM.Id);
@@ -226,7 +216,6 @@ namespace ManageVirtualMachine
 
                 Utilities.Log("Powered OFF VM: " + windowsVM.Id);
 
-                //=============================================================
                 // Create a Linux VM in the same virtual network
 
                 Utilities.Log("Creating a Network Interface #2");
@@ -291,7 +280,6 @@ namespace ManageVirtualMachine
                 Utilities.Log("Created a Linux VM (in the same virtual network): " + linuxVM.Id);
                 Utilities.PrintVirtualMachine(linuxVM);
 
-                //=============================================================
                 // List virtual machines in the resource group
 
                 Utilities.Log("Printing list of VMs =======");
@@ -301,7 +289,6 @@ namespace ManageVirtualMachine
                     Utilities.PrintVirtualMachine(virtualMachine);
                 }
 
-                //=============================================================
                 // Delete the virtual machine
                 Utilities.Log("Deleting VM: " + windowsVM.Id);
 
@@ -330,7 +317,6 @@ namespace ManageVirtualMachine
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 

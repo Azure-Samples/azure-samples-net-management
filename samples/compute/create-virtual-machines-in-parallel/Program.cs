@@ -9,7 +9,7 @@ using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
 using Azure.ResourceManager.Storage;
 using Azure.ResourceManager.Storage.Models;
-using Samples.Helpers;
+using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,15 +19,14 @@ namespace CreateVirtualMachinesInParallel
 {
     public class Program
     {
-        /**
-         * Azure compute sample for creating multiple virtual machines in parallel.
-         *  - Define 1 virtual network per region
-         *  - Define 1 storage account per region
-         *  - Create 5 virtual machines in 2 regions using defined virtual network and storage account
-         *  - Create a traffic manager to route traffic across the virtual machines(Wait for Track2 Traffic Manager ready)
-         */
+        //Azure compute sample for creating multiple virtual machines in parallel.
+        // - Define 1 virtual network per region
+        // - Define 1 storage account per region
+        // - Create 5 virtual machines in 2 regions using defined virtual network and storage account
+        // - Create a traffic manager to route traffic across the virtual machines(Wait for Track2 Traffic Manager ready)
+
         private const string Username = "tirekicker";
-        private const string Password = "12NewPA$$w0rd!";
+        private const string Password = "<password>";
         private static readonly string rgName = Utilities.RandomResourceName("rgCOMV", 10);
         private static readonly string SubscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
@@ -50,14 +49,11 @@ namespace CreateVirtualMachinesInParallel
 
             try
             {
-                //=============================================================
                 // Create a resource group (Where all resources gets created)
-                //
                 await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, "westus");
 
                 var publicIpCreatableKeys = new List<string>();
                 // Prepare a batch of Creatable definitions
-                //
                 var creatableVirtualMachines = new Dictionary<string, VirtualMachine>();
                 //var creatableVirtualMachines = new List<VirtualMachine>();
 
@@ -66,10 +62,8 @@ namespace CreateVirtualMachinesInParallel
                     var region = entry.Key;
                     var vmCount = entry.Value;
 
-                    //=============================================================
                     // Create 1 network creatable per region
                     // Prepare Creatable Network definition (Where all the virtual machines get added to)
-                    //
                     var networkName = Utilities.RandomResourceName("vnetCOPD-", 20);
                     var virtualNetworkParameters = new VirtualNetwork
                     {
@@ -87,9 +81,7 @@ namespace CreateVirtualMachinesInParallel
                     var networkCreatable = (await (await virtualNetworks
                         .StartCreateOrUpdateAsync(rgName, networkName, virtualNetworkParameters)).WaitForCompletionAsync()).Value;
 
-                    //=============================================================
                     // Create 1 storage creatable per region (For storing VMs disk)
-                    //
                     var storageAccountName = Utilities.RandomResourceName("stgcopd", 20);
                     var storageAccountParameters = new StorageAccountCreateParameters(new Azure.ResourceManager.Storage.Models.Sku(SkuName.StandardGRS), Kind.Storage, region);
                     await (await storageAccounts.StartCreateAsync(rgName, storageAccountName, storageAccountParameters)).WaitForCompletionAsync();
@@ -98,9 +90,7 @@ namespace CreateVirtualMachinesInParallel
                     var linuxVMNamePrefix = Utilities.RandomResourceName("vm-", 15);
                     for (int i = 1; i <= vmCount; i++)
                     {
-                        //=============================================================
                         // Create 1 public IP address creatable
-                        //
                         var ipAddress = new PublicIPAddress
                         {
                             PublicIPAddressVersion = Azure.ResourceManager.Network.Models.IPVersion.IPv4,
@@ -138,7 +128,6 @@ namespace CreateVirtualMachinesInParallel
                         nic = await networkInterfaces.StartCreateOrUpdate(rgName, $"{linuxVMNamePrefix}-{i}", nic).WaitForCompletionAsync();
                         Utilities.Log("Created Network Interface: " + nic.Name);
 
-                        //=============================================================
                         // Create 1 virtual machine creatable
                         var vhdContainer = "https://" + storageAccountName + ".blob.core.windows.net/" + containerName;
                         var osVhduri = vhdContainer + string.Format("/os{0}.vhd", $"{linuxVMNamePrefix}-{i}");
@@ -189,7 +178,6 @@ namespace CreateVirtualMachinesInParallel
                     }
                 }
 
-                //=============================================================
                 // Create !!
                 var t1 = DateTimeOffset.Now.UtcDateTime;
                 Utilities.Log("Creating the virtual machines");
@@ -198,7 +186,6 @@ namespace CreateVirtualMachinesInParallel
                 foreach (var item in creatableVirtualMachines)
                 {
                     Task task = CreateVM(virtualMachines, item.Key, item.Value);
-                    //task.Start();
                     TaskList.Add(task);
                 }
 
@@ -240,7 +227,6 @@ namespace CreateVirtualMachinesInParallel
         {
             try
             {
-                //=================================================================
                 // Authenticate
                 var credentials = new DefaultAzureCredential();
 
