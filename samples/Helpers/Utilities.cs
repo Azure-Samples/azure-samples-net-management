@@ -52,8 +52,6 @@ namespace Samples.Helpers
 
         public static string GetArmTemplate(string templateFileName)
         {
-            //var adminUsername = "tirekicker";
-            //var adminPassword = "12NewPA$$w0rd!";
             var hostingPlanName = RandomResourceName("hpRSAT", 24);
             var webAppName = RandomResourceName("wnRSAT", 24);
             var armTemplateString = File.ReadAllText(Path.Combine(Utilities.ProjectPath, "Asset", templateFileName));
@@ -66,10 +64,7 @@ namespace Samples.Helpers
                 armTemplateString = armTemplateString.Replace("\"webSiteName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"\"",
                     "\"webSiteName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"" + webAppName + "\"");
             }
-            else if (String.Equals("ArmTemplateVM.json", templateFileName, StringComparison.OrdinalIgnoreCase))
-            { 
             
-            }
             return armTemplateString;
         }
 
