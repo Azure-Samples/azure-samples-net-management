@@ -7,9 +7,9 @@ products:
 description: "This code samples will show you how to manage ip address using Azure SDK for .NET."
 urlFragment: network-manage-ip-address
 ---
-# Getting started - Managing IP Addess using Azure .NET SDK
+# Getting started - Managing IP Address using Azure .NET SDK
 
-This code sample will show you how to manage IP Addess using Azure SDK for .NET.
+This code sample will show you how to manage IP Address using Azure SDK for .NET.
 
 ## Features
 
