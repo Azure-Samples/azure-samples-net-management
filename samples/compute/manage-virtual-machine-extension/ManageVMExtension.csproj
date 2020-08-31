@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.2.0-preview.5" />
+    <PackageReference Include="Azure.Identity" Version="1.2.2" />
     <PackageReference Include="Azure.ResourceManager.Compute" Version="1.0.0-preview.1" />
     <PackageReference Include="Azure.ResourceManager.Network" Version="1.0.0-preview.1" />
   </ItemGroup>
