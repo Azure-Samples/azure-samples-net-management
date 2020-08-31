@@ -1,5 +1,4 @@
-﻿using Azure;
-using Azure.Identity;
+﻿using Azure.Identity;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Resources.Models;
 using Azure.ResourceManager.Compute;
@@ -145,8 +144,8 @@ namespace CreateVMSample
                 AvailabilitySet = new Azure.ResourceManager.Compute.Models.SubResource() { Id = availabilitySet.Id }
             };
 
-            var operaiontion = await virtualMachinesClient.StartCreateOrUpdateAsync(resourceGroupName, vmName, vm);
-            var result = (await operaiontion.WaitForCompletionAsync()).Value;
+            var operation = await virtualMachinesClient.StartCreateOrUpdateAsync(resourceGroupName, vmName, vm);
+            var result = (await operation.WaitForCompletionAsync()).Value;
             Console.WriteLine("VM ID: " + result.Id);
             Console.WriteLine("--------Done create VM--------");
         }
