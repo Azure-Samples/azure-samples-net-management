@@ -7,9 +7,9 @@ products:
 description: "This code samples will show you how to manage a Vitural Machine using Azure SDK for .NET."
 urlFragment: compute-manage-vm
 ---
-# Getting started - Managing Vitural Machine using Azure .NET SDK
+# Getting started - Managing Virtual Machine using Azure .NET SDK
 
-This code sample will show you how to manage a Vitural Machine using Azure SDK for .NET.
+This code sample will show you how to manage a Virtual Machine using Azure SDK for .NET.
 
 ## Features
 
