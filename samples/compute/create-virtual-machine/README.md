@@ -9,7 +9,7 @@ urlFragment: compute-create-vm
 ---
 # Getting started - Managing Compute Resources using Azure .NET SDK
 
-This code sample will show you how to create a Vitural Machine using Azure SDK for .NET.
+This code sample will show you how to create a Virtual Machine using Azure SDK for .NET.
 
 ## Features
 
