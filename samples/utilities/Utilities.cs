@@ -19,7 +19,6 @@ namespace Samples.Utilities
         public static bool IsRunningMocked { get; set; }
         public static Action<string> LoggerMethod { get; set; }
         public static Func<string> PauseMethod { get; set; }
-
         public static string ProjectPath { get; set; }
 
         static Utilities()
@@ -28,6 +27,7 @@ namespace Samples.Utilities
             PauseMethod = Console.ReadLine;
             ProjectPath = ".";
         }
+
         public static void Log(string message)
         {
             LoggerMethod.Invoke(message);
@@ -47,7 +47,7 @@ namespace Samples.Utilities
 
         public static void Log()
         {
-            Utilities.Log("");
+            Utilities.Log(string.Empty);
         }
 
         public static string GetArmTemplate(string templateFileName)
@@ -56,9 +56,8 @@ namespace Samples.Utilities
             var webAppName = RandomResourceName("wnRSAT", 24);
             var armTemplateString = File.ReadAllText(Path.Combine(Utilities.ProjectPath, "Asset", templateFileName));
 
-            if (String.Equals("ArmTemplate.json", templateFileName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("ArmTemplate.json", templateFileName, StringComparison.OrdinalIgnoreCase))
             {
-                var index = armTemplateString.IndexOf("\"hostingPlanName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"\"");
                 armTemplateString = armTemplateString.Replace("\"hostingPlanName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"\"",
                    "\"hostingPlanName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"" + hostingPlanName + "\"");
                 armTemplateString = armTemplateString.Replace("\"webSiteName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"\"",
