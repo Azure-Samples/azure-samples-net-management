@@ -8,7 +8,6 @@ namespace Samples.Utilities
     public class ResourceNamer
     {
         private readonly string randName;
-        private static string[] formats = new string[] { "M/d/yyyy h:mm:ss tt" };
         private static Random random = new Random();
 
         public ResourceNamer(string name)
@@ -40,7 +39,7 @@ namespace Samples.Utilities
 
         private string RandomString(int length)
         {
-            String str = "";
+            string str = string.Empty;
             while (str.Length < length)
             {
                 str += Guid.NewGuid().ToString("N").Substring(0, Math.Min(32, length)).ToLower();
