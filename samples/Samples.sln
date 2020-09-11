@@ -69,6 +69,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ManageResourceGroup", "reso
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "utilities\Utilities.csproj", "{829C7E77-AAF5-4D3F-978A-74A3A75D1568}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "storage", "storage", "{BA5CE472-E7D4-4232-A308-2AEFAC5B60DF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "create-storage-account", "create-storage-account", "{E3936643-EE14-4588-9986-47884419CE2C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateStorageSample", "CreateStorageSample\CreateStorageSample.csproj", "{6750AE11-BD61-4519-858C-95FF764CC310}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -131,6 +137,10 @@ Global
 		{829C7E77-AAF5-4D3F-978A-74A3A75D1568}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{829C7E77-AAF5-4D3F-978A-74A3A75D1568}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{829C7E77-AAF5-4D3F-978A-74A3A75D1568}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6750AE11-BD61-4519-858C-95FF764CC310}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6750AE11-BD61-4519-858C-95FF764CC310}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6750AE11-BD61-4519-858C-95FF764CC310}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6750AE11-BD61-4519-858C-95FF764CC310}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -163,6 +173,8 @@ Global
 		{8EE2A184-05A2-41D5-9AF2-18311F7B4B4D} = {942307DB-F5B5-4C7F-B957-677DF59BEF7B}
 		{046D84E3-85A9-4F9F-86F5-D6EB869999A0} = {106B4A19-E7F2-459C-BB92-C6E641C50034}
 		{829C7E77-AAF5-4D3F-978A-74A3A75D1568} = {845FE81D-7042-4238-B5A3-453A28FB0BCD}
+		{E3936643-EE14-4588-9986-47884419CE2C} = {BA5CE472-E7D4-4232-A308-2AEFAC5B60DF}
+		{6750AE11-BD61-4519-858C-95FF764CC310} = {E3936643-EE14-4588-9986-47884419CE2C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F80A83A1-2D7B-4467-BE1F-E61821187505}
