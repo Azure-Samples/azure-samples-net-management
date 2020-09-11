@@ -1,16 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
-
-using Azure.ResourceManager.Compute.Models;
-using Azure.ResourceManager.EventHubs.Models;
-using Azure.ResourceManager.KeyVault.Models;
-using Azure.ResourceManager.Network.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using Azure.ResourceManager.Compute.Models;
+using Azure.ResourceManager.EventHubs.Models;
+using Azure.ResourceManager.KeyVault.Models;
+using Azure.ResourceManager.Network.Models;
+using Azure.ResourceManager.Storage.Models;
 
 namespace Samples.Utilities
 {
@@ -63,7 +64,7 @@ namespace Samples.Utilities
                 armTemplateString = armTemplateString.Replace("\"webSiteName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"\"",
                     "\"webSiteName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"" + webAppName + "\"");
             }
-            
+
             return armTemplateString;
         }
 
@@ -176,8 +177,18 @@ namespace Samples.Utilities
                 if (accessPolicy.Permissions.Secrets != null)
                 {
                     info.Append("\n\t\tSecret permissions: ").Append(FormatCollection(accessPolicy.Permissions.Secrets.Select(secret => secret.ToString())));
-                }      
+                }
             }
+
+            Utilities.Log(info.ToString());
+        }
+
+        public static void PrintStorageAccount(StorageAccount storageAccount)
+        {
+            var info = new StringBuilder().Append("Storage Account: ").Append(storageAccount.Id)
+                .Append("Name: ").Append(storageAccount.Name)
+                .Append("\n\tLocation: ").Append(storageAccount.Location)
+                .Append("\n\tSku: ").Append($"{storageAccount.Sku.Name} - {storageAccount.Sku.Tier}");
 
             Utilities.Log(info.ToString());
         }
@@ -365,7 +376,7 @@ namespace Samples.Utilities
             {
                 msi.Append("\n\t\tMSI enabled:").Append("True");
                 foreach (var item in virtualMachine.Identity.UserAssignedIdentities)
-                { 
+                {
                     msi.Append("\n\t\tMSI Active Directory Service Name:").Append(item.Key);
                     msi.Append("\n\t\tMSI Active Directory Service Principal Id:").Append(item.Value.PrincipalId);
                     msi.Append("\n\t\tMSI Active Directory Client Id:").Append(item.Value.PrincipalId);
