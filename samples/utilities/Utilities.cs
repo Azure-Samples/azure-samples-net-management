@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Azure.ResourceManager.AppConfiguration.Models;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.EventHubs.Models;
 using Azure.ResourceManager.KeyVault.Models;
@@ -413,6 +414,16 @@ namespace Samples.Utilities
                 .Append("\n\tIdle timeout (minutes): ").Append(publicIPAddress.IdleTimeoutInMinutes)
                 .Append("\n\tIP allocation method: ").Append(publicIPAddress.PublicIPAllocationMethod)
                 .ToString());
+        }
+
+        public static void PrintAppConfiguration(ConfigurationStore configurationStore)
+        {
+            var info = new StringBuilder().Append("App Configuration: ").Append(configurationStore.Id)
+                .Append("Name: ").Append(configurationStore.Name)
+                .Append("\n\tLocation: ").Append(configurationStore.Location)
+                .Append("\n\tSku: ").Append(configurationStore.Sku.Name);
+
+            Utilities.Log(info.ToString());
         }
 
         /// <summary>
