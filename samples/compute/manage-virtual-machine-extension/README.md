@@ -5,7 +5,7 @@ languages:
 products:
 - azure
 description: "This code samples will show you how to manage a Vitural Machine using Azure SDK for .NET."
-urlFragment: compute-manage-vm
+urlFragment: compute-manage-vm-extension
 ---
 # Getting started - Managing Virtual Machine using Azure .NET SDK
 
