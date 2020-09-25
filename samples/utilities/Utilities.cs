@@ -148,7 +148,6 @@ namespace Samples.Utilities
                     .Append("\n\t HostName: ").Append(resource.HostName)
                     .Append("\n\t DataLocation: ").Append(resource.DataLocation)
                     .Append("\n\t NotificationHubId: ").Append(resource.NotificationHubId)
-                    .Append("\n\t Version: ").Append(resource.Version)
                     .Append("\n\t ImmutableResourceId: ").Append(resource.ImmutableResourceId)
                     .Append("\n\t Location: ").Append(resource.Location);
 

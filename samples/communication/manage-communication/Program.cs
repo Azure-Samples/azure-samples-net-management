@@ -16,206 +16,46 @@ using Samples.Utilities;
 
 namespace ManageCommunication
 {
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            // Create a root command with some options
-            var rootCommand = new RootCommand { };
+            try
+            {
+                // Authenticate
+                var credential = new DefaultAzureCredential();
 
-            rootCommand.Description = "Sample app for C# SDK for CommunicationManagementClient";
-
-            rootCommand.Add(GenerateCommandCreateCommunicationService());
-            rootCommand.Add(GenerateCommandGetCommunicationService());
-            rootCommand.Add(GenerateCommandUpdateCommunicationService());
-            rootCommand.Add(GenerateCommandDeleteCommunicationService());
-            rootCommand.Add(GenerateCommandListCommunicationServiceBySubscription());
-            rootCommand.Add(GenerateCommandListCommunicationServiceByResourceGroup());
-            rootCommand.Add(GenerateCommandListKeys());
-            rootCommand.Add(GenerateCommandRegenerateKey());
-            rootCommand.Add(GenerateCommandLinkNotificationHub());
-
-            // Parse the incoming args and invoke the handler
-            return rootCommand.InvokeAsync(args).Result;
+                await RunSample(credential);
+            }
+            catch (Exception ex)
+            {
+                Utilities.Log(ex);
+            }
         }
 
-        private static Command GenerateCommandCreateCommunicationService()
+        public static async Task RunSample(DefaultAzureCredential credential)
         {
-            var command = new Command("create");
-            command.Handler = CommandHandler.Create((string resourceGroupName, string resourceName) =>
-            {
-                Utilities.Log(String.Format("START: Create action resourceGroupName: {0} resourceName: {1}", resourceGroupName, resourceName));
-                Utilities.Log("----------------------");
+            String resourceGroupName = Utilities.RandomResourceName("rg-manage-comm-", 24);
+            String resourceName = Utilities.RandomResourceName("manage-comm-", 24);
+            String region = "westus";
 
-                CreateCommunicationServiceAsync(CreateCommunicationManagementClient(CreateEnvironmentCredential()), resourceGroupName, resourceName).GetAwaiter().GetResult();
+            CommunicationManagementClient acsClient = CreateCommunicationManagementClient(credential);
+            await ResourceGroupHelper.CreateOrUpdateResourceGroup(resourceGroupName, region);
 
-                Utilities.Log("----------------------");
-                Utilities.Log(String.Format("FINISHED: Create action resourceGroupName: {0} resourceName: {1}", resourceGroupName, resourceName));
-            });
+            await CreateCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
+            await GetCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
+            await UpdateCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
 
-            command.AddArgument(new Argument<string>("resource-group-name"));
-            command.AddArgument(new Argument<string>("resource-name"));
+            ListCommunicationServiceBySubscription(acsClient);
+            ListCommunicationServiceByResourceGroup(acsClient, resourceGroupName);
 
-            return command;
-        }
+            await ListKeysAsync(acsClient, resourceGroupName, resourceName);
+            await RegenerateKeyAsync(acsClient, resourceGroupName, resourceName, KeyType.Primary);
+            await RegenerateKeyAsync(acsClient, resourceGroupName, resourceName, KeyType.Secondary);
 
-        private static Command GenerateCommandGetCommunicationService()
-        {
-            var command = new Command("get");
-            command.Handler = CommandHandler.Create((string resourceGroupName, string resourceName) =>
-            {
-                Utilities.Log(String.Format("START: Create action resourceGroupName: {0} resourceName: {1}", resourceGroupName, resourceName));
-                Utilities.Log("----------------------");
+            await LinkNotificationHubAsync(acsClient, resourceGroupName, resourceName);
 
-                GetCommunicationServiceAsync(CreateCommunicationManagementClient(CreateEnvironmentCredential()), resourceGroupName, resourceName).GetAwaiter().GetResult();
-
-                Utilities.Log("----------------------");
-                Utilities.Log(String.Format("FINISHED: Create action resourceGroupName: {0} resourceName: {1}", resourceGroupName, resourceName));
-            });
-
-            command.AddArgument(new Argument<string>("resource-group-name"));
-            command.AddArgument(new Argument<string>("resource-name"));
-
-            return command;
-        }
-
-
-        private static Command GenerateCommandUpdateCommunicationService()
-        {
-            var command = new Command("update");
-            command.Handler = CommandHandler.Create((string resourceGroupName, string resourceName) =>
-            {
-                Utilities.Log(String.Format("START: Create action resourceGroupName: {0} resourceName: {1}", resourceGroupName, resourceName));
-                Utilities.Log("----------------------");
-
-                // Provide example tag values to update the resource with
-                var tags = new Dictionary<string,string>();
-                tags.Add("ExampleTagName1", "ExampleTagValue1");
-                tags.Add("ExampleTagName2", "ExampleTagValue2");
-
-                UpdateCommunicationServiceAsync(CreateCommunicationManagementClient(CreateEnvironmentCredential()), resourceGroupName, resourceName, tags).GetAwaiter().GetResult();
-
-                Utilities.Log("----------------------");
-                Utilities.Log(String.Format("FINISHED: Create action resourceGroupName: {0} resourceName: {1}", resourceGroupName, resourceName));
-            });
-            command.AddArgument(new Argument<string>("resource-group-name"));
-            command.AddArgument(new Argument<string>("resource-name"));
-
-            return command;
-        }
-
-        private static Command GenerateCommandDeleteCommunicationService()
-        {
-            var command = new Command("delete");
-            command.Handler = CommandHandler.Create((string resourceGroupName, string resourceName) =>
-            {
-                Utilities.Log(String.Format("START: Delete action resourceGroupName: {0} resourceName: {1}", resourceGroupName, resourceName));
-                Utilities.Log("----------------------");
-
-                DeleteCommunicationServiceAsync(CreateCommunicationManagementClient(CreateEnvironmentCredential()), resourceGroupName, resourceName).GetAwaiter().GetResult();
-
-                Utilities.Log("----------------------");
-                Utilities.Log(String.Format("FINISHED: Delete action resourceGroupName: {0} resourceName: {1}", resourceGroupName, resourceName));
-            });
-            command.AddArgument(new Argument<string>("resource-group-name"));
-            command.AddArgument(new Argument<string>("resource-name"));
-
-            return command;
-        }
-
-        private static Command GenerateCommandListCommunicationServiceBySubscription()
-        {
-            var command = new Command("list");
-            command.Handler = CommandHandler.Create(() =>
-            {
-                Utilities.Log("START: List by subscription action");
-                Utilities.Log("----------------------");
-
-                ListCommunicationServiceBySubscription(CreateCommunicationManagementClient(CreateEnvironmentCredential()));
-
-                Utilities.Log("----------------------");
-                Utilities.Log("FINISHED: List by subscription action");
-            });
-
-            return command;
-        }
-
-        private static Command GenerateCommandListCommunicationServiceByResourceGroup()
-        {
-            var command = new Command("list-by-rg");
-            command.Handler = CommandHandler.Create((string resourceGroupName) =>
-            {
-                Utilities.Log("START: List By Resource Group action");
-                Utilities.Log("----------------------");
-
-                ListCommunicationServiceByResourceGroup(CreateCommunicationManagementClient(CreateEnvironmentCredential()), resourceGroupName);
-
-                Utilities.Log("----------------------");
-                Utilities.Log("FINISHED: List By Resource Group action");
-            });
-            command.AddArgument(new Argument<string>("resource-group-name"));
-
-            return command;
-        }
-
-        private static Command GenerateCommandListKeys()
-        {
-            var command = new Command("list-keys");
-            command.Handler = CommandHandler.Create((string resourceGroupName, string resourceName) =>
-            {
-                Utilities.Log("START: List Keys action");
-                Utilities.Log("----------------------");
-
-                ListKeysAsync(CreateCommunicationManagementClient(CreateEnvironmentCredential()), resourceGroupName, resourceName).GetAwaiter().GetResult();
-
-                Utilities.Log("----------------------");
-                Utilities.Log("FINISHED: List Keys action");
-            });
-            command.AddArgument(new Argument<string>("resource-group-name"));
-            command.AddArgument(new Argument<string>("resource-name"));
-
-            return command;
-        }
-
-        private static Command GenerateCommandRegenerateKey()
-        {
-            var command = new Command("regenerate-key");
-            command.Handler = CommandHandler.Create((string resourceGroupName, string resourceName, string type) =>
-            {
-                Utilities.Log("START: Regenerate Key action");
-                Utilities.Log("----------------------");
-
-                RegenerateKeyAsync(CreateCommunicationManagementClient(CreateEnvironmentCredential()), resourceGroupName, resourceName, type).GetAwaiter().GetResult();
-
-                Utilities.Log("----------------------");
-                Utilities.Log("FINISHED: Regenerate Key action");
-            });
-            command.AddArgument(new Argument<string>("resource-group-name"));
-            command.AddArgument(new Argument<string>("resource-name"));
-            command.AddArgument(new Argument<string>("type"));
-
-            return command;
-        }
-
-        private static Command GenerateCommandLinkNotificationHub()
-        {
-            var command = new Command("link-notification-hub");
-            command.Handler = CommandHandler.Create((string resourceGroupName, string resourceName, string notificationHubId, string notificationHubConnectionString) =>
-            {
-                Utilities.Log("START: LinkNotificationHub action");
-                Utilities.Log("----------------------");
-
-                LinkNotificationHubAsync(CreateCommunicationManagementClient(CreateEnvironmentCredential()), resourceGroupName, resourceName, notificationHubId, notificationHubConnectionString).GetAwaiter().GetResult();
-
-                Utilities.Log("----------------------");
-                Utilities.Log("FINISHED: LinkNotificationHub action");
-            });
-            command.AddArgument(new Argument<string>("resource-group-name"));
-            command.AddArgument(new Argument<string>("resource-name"));
-            command.AddArgument(new Argument<string>("notification-hub-id"));
-            command.AddArgument(new Argument<string>("notification-hub-connection-string"));
-
-            return command;
+            await DeleteCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
         }
 
         private static TokenCredential CreateEnvironmentCredential()
@@ -233,6 +73,8 @@ namespace ManageCommunication
         {
             try
             {
+                Utilities.Log("\nCommunicationService Create...");
+
                 // Set up a CommunicationServiceResource with attributes of the resource we intend to create
                 var resource = new CommunicationServiceResource { Location = "global", DataLocation = "UnitedStates" };
 
@@ -242,7 +84,8 @@ namespace ManageCommunication
 
                 Utilities.Log("Gained the CommunicationServiceCreateOrUpdateOperation. Waiting for it to complete...");
                 Response<CommunicationServiceResource> response = await operation.WaitForCompletionAsync();
-                Utilities.Log("response: " + response.ToString());
+                Utilities.Log("\tresponse: " + response.ToString());
+                Utilities.Print(response.Value);
             }
             catch (Exception e)
             {
@@ -254,10 +97,13 @@ namespace ManageCommunication
         {
             try
             {
+                Utilities.Log("\nCommunicationService Fetch...");
+
                 // Fetch a previously created CommunicationServiceResource
                 Utilities.Log("Waiting for acsClient.CommunicationService.StartCreateOrUpdateAsync");
                 Response<CommunicationServiceResource> response = await acsClient.CommunicationService.GetAsync(resourceGroupName, resourceName);
-                Utilities.Log("response: " + response.ToString());
+                Utilities.Log("\tresponse: " + response.ToString());
+                Utilities.Print(response.Value);
             }
             catch (Exception e)
             {
@@ -265,24 +111,27 @@ namespace ManageCommunication
             }
         }
 
-        private static async Task UpdateCommunicationServiceAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName, Dictionary<string,string> tags)
+        private static async Task UpdateCommunicationServiceAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
         {
-            // Create a CommunicationServiceResource with the updated resource attributes
-            var resource = new CommunicationServiceResource { Location = "global", DataLocation = "UnitedStates" };
-            foreach (KeyValuePair<string, string> tag in tags)
-            {
-                resource.Tags.Add(tag.Value, tag.Key);
-            }
-
             try
             {
+                Utilities.Log("\nCommunicationService Update...");
+
+                // Create a CommunicationServiceResource with the updated resource attributes
+                var resource = new CommunicationServiceResource { Location = "global", DataLocation = "UnitedStates" };
+
+                var tags = new Dictionary<string, string>();
+                tags.Add("ExampleTagName1", "ExampleTagValue1");
+                tags.Add("ExampleTagName2", "ExampleTagValue2");
+
                 // Update an existing resource in Azure with the attributes in `resource` and wait for a response
                 Utilities.Log("Waiting for acsClient.CommunicationService.StartCreateOrUpdateAsync");
                 CommunicationServiceCreateOrUpdateOperation operation = await acsClient.CommunicationService.StartCreateOrUpdateAsync(resourceGroupName, resourceName, resource);
 
                 Utilities.Log("Gained the communicationServiceCreateOrUpdateOperation. Waiting for it to complete...");
                 Response<CommunicationServiceResource> response = await operation.WaitForCompletionAsync();
-                Utilities.Log("response: " + response.ToString());
+                Utilities.Log("\tresponse: " + response.ToString());
+                Utilities.Print(response.Value);
             }
             catch (Exception e)
             {
@@ -294,13 +143,13 @@ namespace ManageCommunication
         {
             try
             {
-                // Delete the resource
-                Utilities.Log("Waiting for acsClient.CommunicationService.StartDeleteAsync");
+                Utilities.Log("\nCommunicationService Delete...");
+
                 CommunicationServiceDeleteOperation operation = await acsClient.CommunicationService.StartDeleteAsync(resourceGroupName, resourceName);
 
                 Utilities.Log("Gained the CommunicationServiceDeleteOperation. Waiting for it to complete...");
                 Response<Response> response = await operation.WaitForCompletionAsync();
-                Utilities.Log("response: " + response.ToString());
+                Utilities.Log("\tresponse: " + response.ToString());
             }
             catch (Exception e)
             {
@@ -312,6 +161,8 @@ namespace ManageCommunication
         {
             try
             {
+                Utilities.Log("\nCommunicationService List by Subscription...");
+
                 // Fetch all Azure Communication Services resources in the subscription
                 var resources = acsClient.CommunicationService.ListBySubscription();
                 Utilities.Log("Found number of resources: " + resources.ToArray().Length);
@@ -331,6 +182,8 @@ namespace ManageCommunication
         {
             try
             {
+                Utilities.Log("\nCommunicationService List by Resource Group...");
+
                 var resources = acsClient.CommunicationService.ListByResourceGroup(resourceGroupName);
                 Utilities.Log("Found number of resources: " + resources.ToArray().Length);
                 foreach (var resource in resources)
@@ -348,6 +201,8 @@ namespace ManageCommunication
         {
             try
             {
+                Utilities.Log("\nCommunicationService List Keys...");
+
                 Response<CommunicationServiceKeys> response = await acsClient.CommunicationService.ListKeysAsync(resourceGroupName, resourceName);
                 Utilities.Log("PrimaryKey: " + response.Value.PrimaryKey);
                 Utilities.Log("SecondaryKey: " + response.Value.SecondaryKey);
@@ -360,12 +215,14 @@ namespace ManageCommunication
             }
         }
 
-        private static async Task RegenerateKeyAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName, string type)
+        private static async Task RegenerateKeyAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName, KeyType type)
         {
             try
             {
+                Utilities.Log("\nCommunicationService Regenerate Keys...");
+
                 var keyTypeParameters = new RegenerateKeyParameters();
-                keyTypeParameters.KeyType = ToKeyType(type);
+                keyTypeParameters.KeyType = type;
 
                 Response<CommunicationServiceKeys> response = await acsClient.CommunicationService.RegenerateKeyAsync(resourceGroupName, resourceName, keyTypeParameters);
                 Utilities.Log("PrimaryKey: " + response.Value.PrimaryKey);
@@ -379,19 +236,17 @@ namespace ManageCommunication
             }
         }
 
-        private static KeyType ToKeyType(string value)
-        {
-            if (string.Equals(value, "Primary", StringComparison.InvariantCultureIgnoreCase)) return KeyType.Primary;
-            if (string.Equals(value, "Secondary", StringComparison.InvariantCultureIgnoreCase)) return KeyType.Secondary;
-            throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown KeyType value.");
-        }
-
-        private static async Task LinkNotificationHubAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName, string notificationHubId, string notificationHubConnectionString)
+        private static async Task LinkNotificationHubAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
         {
             try
             {
+                Utilities.Log("\nCommunicationService Link Notification Hub...");
+
+                var notificationHubId = Environment.GetEnvironmentVariable("AZURE_NOTIFICATION_HUB_ID");
+                var notificationHubConnectionString = Environment.GetEnvironmentVariable("AZURE_NOTIFICATION_HUB_CONNECTION_STRING");
+
                 Response<LinkedNotificationHub> response = await acsClient.CommunicationService.LinkNotificationHubAsync(resourceGroupName, resourceName, new LinkNotificationHubParameters(notificationHubId, notificationHubConnectionString));
-                Utilities.Log("response: " + response.ToString());
+                Utilities.Log("\tresponse: " + response.ToString());
             }
             catch (Exception e)
             {
