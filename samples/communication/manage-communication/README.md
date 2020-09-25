@@ -22,22 +22,24 @@ This project framework provides examples for the following services:
 
 ### Prerequisites
 
-You will need the following values to authenticate to Azure
+You will need the following values run the sample:
 
 -   **Subscription ID**
 -   **Client ID**
 -   **Client Secret**
 -   **Tenant ID**
+-   **Notification Hub Resource ID**
+-   **Notification Hub Connection String**
 
-These values can be obtained from the portal, here's the instructions:
+These values can be obtained from the portal.
 
 ### Get Subscription ID
 
-1.  Login into your Azure account
-2.  Select Subscriptions in the left sidebar
-3.  Select whichever subscription is needed
-4.  Click on Overview
-5.  Copy the Subscription ID
+1.  Login into your Azure account.
+2.  Select Subscriptions in the left sidebar.
+3.  Select whichever subscription is needed.
+4.  Click on Overview.
+5.  Copy the Subscription ID.
 
 ### Get Client ID / Client Secret / Tenant ID
 
@@ -45,9 +47,13 @@ For information on how to get Client ID, Client Secret, and Tenant ID,
 please refer to [this
 document](https://docs.microsoft.com/azure/active-directory/develop/howto-create-service-principal-portal)
 
-### Get Notification Hubs Resource ID and Connection STring
+### Get Notification Hubs Resource ID and Connection String
 
-**TODO**
+1.  Login into your Azure account.
+2.  Search for Notification Hubs.
+3.  Create a Notificaiton Hub.
+4.  On the `Properties` blade, you will find the Notification Hub Resource ID. 
+5.  On the `Access Policies` blade, you will find the Notification Hub Connection String. The Connection String only needs the Listen permission for this sample.
 
 ### Setting Environment Variables
 
@@ -58,8 +64,8 @@ your environment variables
 -   `AZURE_CLIENT_SECRET`
 -   `AZURE_TENANT_ID`
 -   `AZURE_SUBSCRIPTION_ID`
--   `AZURE_NOTIFICATION_HUBS_ID`
--   `AZURE_NOTIFICATION_HUBS_CONNECTION_STRING`
+-   `AZURE_NOTIFICATION_HUB_ID`
+-   `AZURE_NOTIFICATION_HUB_CONNECTION_STRING`
 
 To set the following environment variables on your development system:
 
