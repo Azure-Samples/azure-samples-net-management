@@ -56,11 +56,6 @@ namespace ManageCommunication
             await DeleteCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
         }
 
-        private static TokenCredential CreateEnvironmentCredential()
-        {
-            return new EnvironmentCredential();
-        }
-
         private static CommunicationManagementClient CreateCommunicationManagementClient(TokenCredential tokenCredential)
         {
             var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
