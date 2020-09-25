@@ -4,12 +4,12 @@ languages:
 - csharp
 products:
 - azure
-description: "This code samples will show you how to managing resources using Azure SDK for .NET."
+description: "This code sample will show you how to manage Communication Service resources using Azure SDK for .NET."
 urlFragment: communication-manage-communication
 ---
-# Getting started - Managing resources using Azure .NET SDK
+# Getting started - Managing Azure Communication Services using Azure .NET SDK
 
-This code sample will show you how to managing Communication Service resources using Azure SDK for .NET.
+This code sample will show you how to manage Communication Service resources using Azure SDK for .NET.
 
 ## Features
 
@@ -107,7 +107,7 @@ git clone https://github.com/Azure-Samples/azure-samples-net-management.git
 
 2. Switch to the project folder:
 ```bash
-cd samples/resources/manage-resource
+cd samples/communication/manage-communication 
 ```
 
 3. Run the application with the `dotnet run` command.
@@ -116,16 +116,16 @@ cd samples/resources/manage-resource
 dotnet run
 ```
 
-## This sample shows how to do following operations to manage resources
- - Create a resource.
- - Update a resource.
- - Get a resource
- - Delete a resource.
- - List resources by subscription.
- - List resources by resource group.
+## This sample shows how to do following operations to manage Communication Service resources
+ - Create a Communication Service resource.
+ - Update a Communication Service resource.
+ - Get a Communication Service resource
+ - Delete a Communication Service resource.
+ - List Communication Service resources by subscription.
+ - List Communication Service resources by resource group.
  - List keys.
  - Regenerate keys.
- - Link notification hub.
+ - Link Notification Hub.
 
 ## More information
 
