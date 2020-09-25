@@ -13,6 +13,7 @@ using Azure.ResourceManager.EventHubs.Models;
 using Azure.ResourceManager.KeyVault.Models;
 using Azure.ResourceManager.Network.Models;
 using Azure.ResourceManager.Storage.Models;
+using Azure.ResourceManager.Communication.Models;
 
 namespace Samples.Utilities
 {
@@ -135,6 +136,29 @@ namespace Samples.Utilities
                     .Append("\n\t Secondary key: ").Append(resource.SecondaryKey)
                     .Append("\n\t Primary connection string: ").Append(resource.PrimaryConnectionString)
                     .Append("\n\t Secondary connection string: ").Append(resource.SecondaryConnectionString);
+            Utilities.Log(info.ToString());
+        }
+
+        public static void Print(CommunicationServiceResource resource)
+        {
+            StringBuilder info = new StringBuilder();
+            info.Append("CommunicationServiceResource")
+                    .Append("\n\t Name: ").Append(resource.Name)
+                    .Append("\n\t ProvisioningState: ").Append(resource.ProvisioningState)
+                    .Append("\n\t HostName: ").Append(resource.HostName)
+                    .Append("\n\t DataLocation: ").Append(resource.DataLocation)
+                    .Append("\n\t NotificationHubId: ").Append(resource.NotificationHubId)
+                    .Append("\n\t Version: ").Append(resource.Version)
+                    .Append("\n\t ImmutableResourceId: ").Append(resource.ImmutableResourceId)
+                    .Append("\n\t Location: ").Append(resource.Location);
+
+            string tags = "None";
+            if (resource.Tags != null)
+            {
+                tags = string.Join(", ", resource.Tags.Select(kvp => kvp.Key + ": " + kvp.Value.ToString()));
+            }
+            info.Append("Tags: " + tags);
+
             Utilities.Log(info.ToString());
         }
 

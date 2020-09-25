@@ -6,10 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.1.1" />
+    <PackageReference Include="Azure.Identity" Version="1.2.2" />
     <PackageReference Include="Azure.ResourceManager.Communication" Version="1.0.0-beta.1" />
-    <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20371.2" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\utilities\Utilities.csproj" />
   </ItemGroup>
 
 </Project>
