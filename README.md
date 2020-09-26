@@ -8,6 +8,7 @@ interested in. Each folder name is based on the Azure service, eg. Compute / Net
 ### Samples:
 
 - [App Configuration](https://github.com/Azure-Samples/azure-samples-net-management/tree/master/samples/appconfiguration)
+- [Communication](https://github.com/Azure-Samples/azure-samples-net-management/tree/master/samples/communication)
 - [Compute](https://github.com/Azure-Samples/azure-samples-net-management/tree/master/samples/compute)
 - [Event Hub](https://github.com/Azure-Samples/azure-samples-net-management/tree/master/samples/eventhub)
 - [Key Vault](https://github.com/Azure-Samples/azure-samples-net-management/tree/master/samples/keyvault/manage-key-vault)
