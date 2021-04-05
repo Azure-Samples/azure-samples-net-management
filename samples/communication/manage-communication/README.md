@@ -117,9 +117,10 @@ dotnet run
 ```
 
 ## This sample shows how to do following operations to manage Communication Service resources
+ - Check name availability for a Communication Service resource.
  - Create a Communication Service resource.
+ - Get a Communication Service resource.
  - Update a Communication Service resource.
- - Get a Communication Service resource
  - Delete a Communication Service resource.
  - List Communication Service resources by subscription.
  - List Communication Service resources by resource group.

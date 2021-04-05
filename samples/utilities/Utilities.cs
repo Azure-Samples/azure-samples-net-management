@@ -156,7 +156,7 @@ namespace Samples.Utilities
             {
                 tags = string.Join(", ", resource.Tags.Select(kvp => kvp.Key + ": " + kvp.Value.ToString()));
             }
-            info.Append("Tags: " + tags);
+            info.Append("\n\t Tags: " + tags);
 
             Utilities.Log(info.ToString());
         }
