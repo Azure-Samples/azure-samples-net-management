@@ -40,6 +40,7 @@ namespace ManageCommunication
             CommunicationManagementClient acsClient = CreateCommunicationManagementClient(credential);
             await ResourceGroupHelper.CreateOrUpdateResourceGroup(resourceGroupName, region);
 
+            await CheckNameAvailabilityAsync(acsClient, resourceName);
             await CreateCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
             await GetCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
             await UpdateCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
@@ -60,6 +61,25 @@ namespace ManageCommunication
         {
             var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
             return new CommunicationManagementClient(subscriptionId, tokenCredential);
+        }
+
+        private static async Task CheckNameAvailabilityAsync(CommunicationManagementClient acsClient, string resourceName)
+        {
+            try
+            {
+                Utilities.Log("\nCommunicationService CheckNameAvailability...");
+
+                Response<NameAvailability> response = await acsClient.CommunicationService.CheckNameAvailabilityAsync(new NameAvailabilityParameters("Microsoft.Communication/CommunicationServices", resourceName));
+
+                Utilities.Log("\tresponse: " + response.ToString());
+                Utilities.Log("\tNameAvailable: " + response.Value.NameAvailable.ToString());
+                Utilities.Log("\tReason: " + response.Value.Reason);
+                Utilities.Log("\tMessage: " + response.Value.Message);
+            }
+            catch (Exception e)
+            {
+                Utilities.Log("CheckNameAvailability encountered: " + e.Message);
+            }
         }
 
         private static async Task CreateCommunicationServiceAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
@@ -113,16 +133,13 @@ namespace ManageCommunication
                 // Create a CommunicationServiceResource with the updated resource attributes
                 var resource = new CommunicationServiceResource { Location = "global", DataLocation = "UnitedStates" };
 
-                var tags = new Dictionary<string, string>();
-                tags.Add("ExampleTagName1", "ExampleTagValue1");
-                tags.Add("ExampleTagName2", "ExampleTagValue2");
+                resource.Tags.Add("ExampleTagName1", "ExampleTagValue1");
+                resource.Tags.Add("ExampleTagName2", "ExampleTagValue2");
 
                 // Update an existing resource in Azure with the attributes in `resource` and wait for a response
                 Utilities.Log("Waiting for acsClient.CommunicationService.StartCreateOrUpdateAsync");
-                CommunicationServiceCreateOrUpdateOperation operation = await acsClient.CommunicationService.StartCreateOrUpdateAsync(resourceGroupName, resourceName, resource);
+                Response<CommunicationServiceResource> response = await acsClient.CommunicationService.UpdateAsync(resourceGroupName, resourceName, resource);
 
-                Utilities.Log("Gained the communicationServiceCreateOrUpdateOperation. Waiting for it to complete...");
-                Response<CommunicationServiceResource> response = await operation.WaitForCompletionAsync();
                 Utilities.Log("\tresponse: " + response.ToString());
                 Utilities.Print(response.Value);
             }
@@ -197,10 +214,10 @@ namespace ManageCommunication
                 Utilities.Log("\nCommunicationService List Keys...");
 
                 Response<CommunicationServiceKeys> response = await acsClient.CommunicationService.ListKeysAsync(resourceGroupName, resourceName);
-                Utilities.Log("PrimaryKey: " + response.Value.PrimaryKey);
-                Utilities.Log("SecondaryKey: " + response.Value.SecondaryKey);
-                Utilities.Log("PrimaryConnectionString: " + response.Value.PrimaryConnectionString);
-                Utilities.Log("SecondaryConnectionString: " + response.Value.SecondaryConnectionString);
+                Utilities.Log("\tPrimaryKey: " + response.Value.PrimaryKey);
+                Utilities.Log("\tSecondaryKey: " + response.Value.SecondaryKey);
+                Utilities.Log("\tPrimaryConnectionString: " + response.Value.PrimaryConnectionString);
+                Utilities.Log("\tSecondaryConnectionString: " + response.Value.SecondaryConnectionString);
             }
             catch (Exception e)
             {
@@ -218,10 +235,10 @@ namespace ManageCommunication
                 keyTypeParameters.KeyType = type;
 
                 Response<CommunicationServiceKeys> response = await acsClient.CommunicationService.RegenerateKeyAsync(resourceGroupName, resourceName, keyTypeParameters);
-                Utilities.Log("PrimaryKey: " + response.Value.PrimaryKey);
-                Utilities.Log("SecondaryKey: " + response.Value.SecondaryKey);
-                Utilities.Log("PrimaryConnectionString: " + response.Value.PrimaryConnectionString);
-                Utilities.Log("SecondaryConnectionString: " + response.Value.SecondaryConnectionString);
+                Utilities.Log("\tPrimaryKey: " + response.Value.PrimaryKey);
+                Utilities.Log("\tSecondaryKey: " + response.Value.SecondaryKey);
+                Utilities.Log("\tPrimaryConnectionString: " + response.Value.PrimaryConnectionString);
+                Utilities.Log("\tSecondaryConnectionString: " + response.Value.SecondaryConnectionString);
             }
             catch (Exception e)
             {
