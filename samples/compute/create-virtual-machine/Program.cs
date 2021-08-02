@@ -1,13 +1,14 @@
 ﻿using Azure.Identity;
-using Azure.ResourceManager.Resources;
-using System;
-using System.Threading.Tasks;
-using System.Linq;
 using Azure.ResourceManager;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
+using Azure.ResourceManager.Resources;
+using Azure.ResourceManager.Resources.Models;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CreateVMSample
 {
@@ -20,14 +21,14 @@ namespace CreateVMSample
 
         static async Task Main(string[] args)
         {
-            var armClient = new ArmClient(new DefaultAzureCredential());
+            ArmClient armClient = new ArmClient(new DefaultAzureCredential());
 
             // Create Resource Group
             Console.WriteLine("--------Start create group--------");
-            var resourceGroupContainer = armClient.DefaultSubscription.GetResourceGroups();
-            var location = "westus2";
-            var resourceGroupName = "QuickStartRG";
-            var resourceGroupData = new ResourceGroupData(location);
+            ResourceGroupContainer resourceGroupContainer = armClient.DefaultSubscription.GetResourceGroups();
+            Location location = Location.WestUS2;
+            string resourceGroupName = "QuickStartRG";
+            ResourceGroupData resourceGroupData = new ResourceGroupData(location);
             ResourceGroup resourceGroup = await resourceGroupContainer.CreateOrUpdateAsync(resourceGroupName, resourceGroupData);
             Console.WriteLine("--------Finish create group--------");
 
@@ -48,7 +49,7 @@ namespace CreateVMSample
         {
             // Create AvailabilitySet
             Console.WriteLine("--------Start create AvailabilitySet--------");
-            var availabilitySetData = new AvailabilitySetData(resourceGroup.Data.Location)
+            AvailabilitySetData availabilitySetData = new AvailabilitySetData(resourceGroup.Data.Location)
             {
                 PlatformUpdateDomainCount = 5,
                 PlatformFaultDomainCount = 2,
@@ -58,7 +59,7 @@ namespace CreateVMSample
 
             // Create IP Address
             Console.WriteLine("--------Start create IP Address--------");
-            var ipAddressData = new PublicIPAddressData()
+            PublicIPAddressData ipAddressData = new PublicIPAddressData()
             {
                 PublicIPAddressVersion = Azure.ResourceManager.Network.Models.IPVersion.IPv4,
                 PublicIPAllocationMethod = IPAllocationMethod.Dynamic,
@@ -69,7 +70,7 @@ namespace CreateVMSample
 
             // Create VNet
             Console.WriteLine("--------Start create VNet--------");
-            var vnetData = new VirtualNetworkData()
+            VirtualNetworkData vnetData = new VirtualNetworkData()
             {
                 Location = resourceGroup.Data.Location,
                 AddressSpace = new AddressSpace() { AddressPrefixes = { "10.0.0.0/16" } },
@@ -86,7 +87,7 @@ namespace CreateVMSample
 
             // Create Network Interface
             Console.WriteLine("--------Start create Network Interface--------");
-            var nicData = new NetworkInterfaceData()
+            NetworkInterfaceData nicData = new NetworkInterfaceData()
             {
                 Location = resourceGroup.Data.Location,
                 IpConfigurations = 
@@ -95,9 +96,9 @@ namespace CreateVMSample
                     {
                         Name = "Primary",
                         Primary = true,
-                        Subnet = new SubnetData() { Id = vnetData.Subnets.First().Id },
+                        Subnet = new SubnetData() { Id = vnet.Data.Subnets.First().Id },
                         PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
-                        PublicIPAddress = new PublicIPAddressData() { Id = ipAddressData.Id }
+                        PublicIPAddress = new PublicIPAddressData() { Id = ipAddress.Id }
                     }
                 }
             };
@@ -105,14 +106,13 @@ namespace CreateVMSample
 
             // Create VM
             Console.WriteLine("--------Start create VM--------");
-            var vmData = new VirtualMachineData(resourceGroup.Data.Location)
+            VirtualMachineData vmData = new VirtualMachineData(resourceGroup.Data.Location)
             {
                 NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile { NetworkInterfaces = { new NetworkInterfaceReference() { Id = nic.Id } } },
                 OsProfile = new OSProfile
                 {
                     ComputerName = vmName,
                     AdminUsername = AdminUsername,
-                    AdminPassword = AdminPassword,
                     LinuxConfiguration = new LinuxConfiguration
                     {
                         DisablePasswordAuthentication = true,
