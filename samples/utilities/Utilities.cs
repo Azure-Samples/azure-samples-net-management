@@ -14,6 +14,7 @@ using Azure.ResourceManager.KeyVault.Models;
 using Azure.ResourceManager.Network.Models;
 using Azure.ResourceManager.Storage.Models;
 using Azure.ResourceManager.Communication.Models;
+using Azure.ResourceManager.KeyVault;
 
 namespace Samples.Utilities
 {
@@ -186,12 +187,12 @@ namespace Samples.Utilities
         public static void PrintVault(Vault vault)
         {
             var info = new StringBuilder().Append("Key Vault: ").Append(vault.Id)
-                .Append("Name: ").Append(vault.Name)
-                .Append("\n\tLocation: ").Append(vault.Location)
-                .Append("\n\tSku: ").Append(vault.Properties.Sku.Name).Append(" - ").Append(vault.Properties.Sku.Family)
-                .Append("\n\tVault URI: ").Append(vault.Properties.VaultUri)
+                .Append("Name: ").Append(vault.Data.Name)
+                .Append("\n\tLocation: ").Append(vault.Data.Location)
+                .Append("\n\tSku: ").Append(vault.Data.Properties.Sku.Name).Append(" - ").Append(vault.Data.Properties.Sku.Family)
+                .Append("\n\tVault URI: ").Append(vault.Data.Properties.VaultUri)
                 .Append("\n\tAccess policies: ");
-            foreach (var accessPolicy in vault.Properties.AccessPolicies)
+            foreach (var accessPolicy in vault.Data.Properties.AccessPolicies)
             {
                 info.Append("\n\t\tIdentity:").Append(accessPolicy.ObjectId);
                 if (accessPolicy.Permissions.Keys != null)

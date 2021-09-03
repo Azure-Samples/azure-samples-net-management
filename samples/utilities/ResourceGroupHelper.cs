@@ -29,7 +29,7 @@ namespace Samples.Utilities
         {
             Utilities.Log("Creating a resource group with name: " + rgName);
 
-            var resourceGroup = new ResourceGroup(location);
+            var resourceGroup = new Azure.ResourceManager.Resources.Models.ResourceGroup(location);
             await ResourceGroups.CreateOrUpdateAsync(rgName, resourceGroup);
 
             Utilities.Log("Created a resource group with name: " + rgName);

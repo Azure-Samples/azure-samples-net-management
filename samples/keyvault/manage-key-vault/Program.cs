@@ -3,6 +3,8 @@
 
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
+using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.KeyVault;
 using Azure.ResourceManager.KeyVault.Models;
 using Samples.Utilities;
@@ -33,24 +35,24 @@ namespace ManageKeyVault
             string rgName = Utilities.RandomResourceName("rgNEMV", 24);
             string region = "eastus";
 
-            var keyVaultManagementClient = new KeyVaultManagementClient(subscriptionId, credential);
-            var vaults = keyVaultManagementClient.Vaults;
+            ArmClient armClient = new ArmClient(credential);
+            var rg = (await armClient.DefaultSubscription.GetResourceGroups().CreateOrUpdateAsync(rgName, new ResourceGroupData(region))).Value;
 
             try
             {
-                await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
+                var vaultContainer = rg.GetVaults();
 
                 // Create a key vault with empty access policy
 
                 Utilities.Log("Creating a key vault...");
 
-                var vaultProperties = new VaultProperties(tenantId, new Sku(SkuName.Standard))
+                var vaultProperties = new VaultProperties(tenantId, new Sku(SkuFamily.A, SkuName.Standard))
                 {
-                    AccessPolicies = new[] { new AccessPolicyEntry(tenantId, objectId, new Permissions()) }
+                    AccessPolicies = { new AccessPolicyEntry(tenantId, objectId, new Permissions()) }
                 };
                 var vaultParameters = new VaultCreateOrUpdateParameters(region, vaultProperties);
 
-                var rawResult = await vaults.StartCreateOrUpdateAsync(rgName, vaultName1, vaultParameters);
+                var rawResult = await vaultContainer.CreateOrUpdateAsync(vaultName1, vaultParameters);
                 var vault1 = (await rawResult.WaitForCompletionAsync()).Value;
 
                 Utilities.Log("Created key vault");
@@ -62,15 +64,14 @@ namespace ManageKeyVault
 
                 var permissions = new Permissions
                 {
-                    Keys = new KeyPermissions[] { new KeyPermissions("all") },
-                    Secrets = new SecretPermissions[] { new SecretPermissions("get"), new SecretPermissions("list") },
+                    Keys = { new KeyPermissions("all") },
+                    Secrets = { new SecretPermissions("get"), new SecretPermissions("list") },
                 };
                 var accessPolicyEntry = new AccessPolicyEntry(tenantId, objectId, permissions);
                 var accessPolicyProperties = new VaultAccessPolicyProperties(new[] { accessPolicyEntry });
-                var accessPolicyParameters = new VaultAccessPolicyParameters(accessPolicyProperties);
 
-                await vaults.UpdateAccessPolicyAsync(rgName, vaultName1, AccessPolicyUpdateKind.Add, accessPolicyParameters);
-                vault1 = (await vaults.GetAsync(rgName, vaultName1)).Value;
+                await vaultContainer.AddAccessPolicyAsync(accessPolicyProperties);
+                vault1 = (await vaultContainer.GetAsync(vaultName1)).Value;
 
                 Utilities.Log("Updated key vault");
                 Utilities.PrintVault(vault1);
@@ -81,21 +82,17 @@ namespace ManageKeyVault
 
                 permissions = new Permissions
                 {
-                    Secrets = new SecretPermissions[] { new SecretPermissions("all") }
+                    Secrets = { new SecretPermissions("all") }
                 };
                 accessPolicyEntry = new AccessPolicyEntry(tenantId, objectId, permissions);
                 var vaultPatchProperties = new VaultPatchProperties
                 {
                     EnabledForDeployment = true,
                     EnabledForTemplateDeployment = true,
-                    AccessPolicies = new[] { accessPolicyEntry }
+                    AccessPolicies = { accessPolicyEntry }
                 };
-                var vaultPatchParameters = new VaultPatchParameters
-                {
-                    Properties = vaultPatchProperties
-                };
-                await vaults.UpdateAsync(rgName, vaultName1, vaultPatchParameters);
-                vault1 = (await vaults.GetAsync(rgName, vaultName1)).Value;
+                await vault1.UpdateAsync((System.Collections.Generic.IDictionary<string, string>)vault1.Data.Tags, vaultPatchProperties);
+                vault1 = (await vaultContainer.GetAsync(vaultName1)).Value;
 
                 Utilities.Log("Updated key vault");
                 // Print the network security group
@@ -107,17 +104,17 @@ namespace ManageKeyVault
 
                 permissions = new Permissions
                 {
-                    Keys = new KeyPermissions[] { new KeyPermissions("list"), new KeyPermissions("get"), new KeyPermissions("decrypt") },
-                    Secrets = new SecretPermissions[] { new SecretPermissions("get") },
+                    Keys = { new KeyPermissions("list"), new KeyPermissions("get"), new KeyPermissions("decrypt") },
+                    Secrets = { new SecretPermissions("get") },
                 };
                 accessPolicyEntry = new AccessPolicyEntry(tenantId, objectId, permissions);
-                vaultProperties = new VaultProperties(tenantId, new Sku(SkuName.Standard))
+                vaultProperties = new VaultProperties(tenantId, new Sku(SkuFamily.A, SkuName.Standard))
                 {
-                    AccessPolicies = new[] { accessPolicyEntry }
+                    AccessPolicies = { accessPolicyEntry }
                 };
                 vaultParameters = new VaultCreateOrUpdateParameters(region, vaultProperties);
 
-                rawResult = await vaults.StartCreateOrUpdateAsync(rgName, vaultName2, vaultParameters);
+                rawResult = await vaultContainer.CreateOrUpdateAsync(vaultName2, vaultParameters);
                 var vault2 = (await rawResult.WaitForCompletionAsync()).Value;
 
                 Utilities.Log("Created key vault");
@@ -128,22 +125,22 @@ namespace ManageKeyVault
 
                 Utilities.Log("Listing key vaults...");
 
-                foreach (var vault in (await vaults.ListByResourceGroupAsync(rgName).ToEnumerableAsync()))
+                foreach (var vault in (await vaultContainer.GetAllAsync().ToEnumerableAsync()))
                 {
                     Utilities.PrintVault(vault);
                 }
 
                 // Delete key vaults
                 Utilities.Log("Deleting the key vaults");
-                await vaults.DeleteAsync(rgName, vaultName1);
-                await vaults.DeleteAsync(rgName, vaultName2);
+                await vault1.DeleteAsync();
+                await vault2.DeleteAsync();
                 Utilities.Log("Deleted the key vaults");
             }
             finally
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await rg.DeleteAsync();
                 }
                 catch (NullReferenceException)
                 {
