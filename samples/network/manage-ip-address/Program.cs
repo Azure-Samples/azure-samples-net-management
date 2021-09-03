@@ -3,11 +3,12 @@
 
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
+using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
-using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,38 +25,33 @@ namespace ManageIPAddress
         //   - Get the assigned public IP address for a virtual machine
         //   - Remove a public IP address from a virtual machine.
 
-        private static readonly string UserName = "tirekicker";
-        private static readonly string Password = "<password>";
-        private static readonly string SubscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
-        public static async Task RunSample(TokenCredential credential)
+        public static async Task RunSample()
         {
-            string publicIPAddressName1 = Utilities.RandomResourceName("pip1", 20);
-            string publicIPAddressName2 = Utilities.RandomResourceName("pip2", 20);
-            string publicIPAddressLeafDNS1 = Utilities.RandomResourceName("pip1", 20);
-            string publicIPAddressLeafDNS2 = Utilities.RandomResourceName("pip2", 20);
-            string networkInterfaceName = Utilities.RandomResourceName("nic", 20);
-            string vmName = Utilities.RandomResourceName("vm", 8);
-            string rgName = Utilities.RandomResourceName("rgNEMP", 24);
+            const string UserName = "tirekicker";
+            const string Password = "RX-78-gp$3";
+            const string publicIPAddressName1 = "pip1";
+            const string publicIPAddressName2 = "pip2";
+            const string publicIPAddressLeafDNS1 = "pipdns1";
+            const string publicIPAddressLeafDNS2 = "pipdns2";
+            const string networkInterfaceName = "nic";
+            const string vmName = "vm";
+            const string rgName = "rgNEMP";
 
-            var networkManagementClient = new NetworkManagementClient(SubscriptionId, credential);
-            var virtualNetworks = networkManagementClient.VirtualNetworks;
-            var publicIPAddresses = networkManagementClient.PublicIPAddresses;
-            var networkInterfaces = networkManagementClient.NetworkInterfaces;
-            var computeManagementClient = new ComputeManagementClient(SubscriptionId, credential);
-            var virtualMachines = computeManagementClient.VirtualMachines;
+            // create an ArmClient as the entry of all resource management API
+            ArmClient armClient = new ArmClient(new DefaultAzureCredential());
 
+            ResourceGroup resourceGroup = null;
             try
             {
-                await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, "eastus");
+                resourceGroup = await armClient.DefaultSubscription.GetResourceGroups().CreateOrUpdate(rgName, new ResourceGroupData("eastus")).WaitForCompletionAsync();
 
                 // Assign a public IP address for a VM during its creation
 
                 // Define a public IP address to be used during VM creation time
 
-                Utilities.Log("Creating a public IP address...");
-
-                var publicIPAddress = new PublicIPAddress
+                Console.WriteLine("Creating a public IP address...");
+                var publicIPAddressData = new PublicIPAddressData
                 {
                     PublicIPAddressVersion = Azure.ResourceManager.Network.Models.IPVersion.IPv4,
                     PublicIPAllocationMethod = IPAllocationMethod.Dynamic,
@@ -66,24 +62,19 @@ namespace ManageIPAddress
                     }
                 };
 
-                publicIPAddress = (await publicIPAddresses.StartCreateOrUpdate(rgName, publicIPAddressName1, publicIPAddress)
-                     .WaitForCompletionAsync()).Value;
-
-                Utilities.Log("Created a public IP address");
-                // Print public IP address details
-                Utilities.PrintIPAddress(publicIPAddress);
+                var publicIPAddressContainer = resourceGroup.GetPublicIPAddresses();
+                PublicIPAddress publicIPAddress = await publicIPAddressContainer.CreateOrUpdate(publicIPAddressName1, publicIPAddressData).WaitForCompletionAsync();
+                Console.WriteLine($"Created a public IP address {publicIPAddress.Id}");
 
                 // Use the pre-created public IP for the new VM
-
-                Utilities.Log("Creating a Virtual Network");
-
-                var vnet = new VirtualNetwork
+                Console.WriteLine("Creating a Virtual Network");
+                var vnetData = new VirtualNetworkData
                 {
                     Location = "eastus",
-                    AddressSpace = new AddressSpace { AddressPrefixes = new List<string>() { "10.0.0.0/16" } },
-                    Subnets = new List<Subnet>
+                    AddressSpace = new AddressSpace { AddressPrefixes = { "10.0.0.0/16" } },
+                    Subnets =
                     {
-                        new Subnet
+                        new SubnetData
                         {
                             Name = "mySubnet",
                             AddressPrefix = "10.0.0.0/28",
@@ -91,40 +82,39 @@ namespace ManageIPAddress
                     },
                 };
 
-                vnet = await virtualNetworks.StartCreateOrUpdate(rgName, vmName + "_vent", vnet).WaitForCompletionAsync();
+                var virtualNetworkContainer = resourceGroup.GetVirtualNetworks();
+                VirtualNetwork vnet = await virtualNetworkContainer.CreateOrUpdate($"{vmName}_vent", vnetData).WaitForCompletionAsync();
+                Console.WriteLine($"Created a Virtual Network {vnet.Id}");
 
-                Utilities.Log("Created a Virtual Network");
-
-                Utilities.Log("Creating a Network Interface");
-
-                var networkInterface = new NetworkInterface()
+                Console.WriteLine("Creating a Network Interface");
+                var networkInterfaceData = new NetworkInterfaceData()
                 {
                     Location = "eastus",
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>()
+                    IpConfigurations =
                     {
                         new NetworkInterfaceIPConfiguration()
                         {
                             Name = "Primary",
                             Primary = true,
-                            Subnet = new Subnet() { Id = vnet.Subnets.First().Id },
+                            Subnet = new SubnetData() { Id = vnet.Data.Subnets.First().Id },
                             PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
-                            PublicIPAddress = new PublicIPAddress() { Id = publicIPAddress.Id }
+                            PublicIPAddress = new PublicIPAddressData() { Id = publicIPAddress.Id }
                         }
                     }
                 };
 
-                networkInterface = await (await networkInterfaces.StartCreateOrUpdateAsync(rgName, networkInterfaceName, networkInterface)).WaitForCompletionAsync();
+                var networkInterfaceContainer = resourceGroup.GetNetworkInterfaces();
+                NetworkInterface networkInterface = await (await networkInterfaceContainer.CreateOrUpdateAsync(networkInterfaceName, networkInterfaceData)).WaitForCompletionAsync();
+                Console.WriteLine($"Created a Network Interface {networkInterface.Id}");
 
-                Utilities.Log("Created a Network Interface");
-
-                Utilities.Log("Creating a Windows VM");
+                Console.WriteLine("Creating a Windows VM");
                 var t1 = DateTime.UtcNow;
 
-                var vm = new VirtualMachine("eastus")
+                var vmData = new VirtualMachineData("eastus")
                 {
                     NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile
                     {
-                        NetworkInterfaces = new[]
+                        NetworkInterfaces =
                         {
                             new NetworkInterfaceReference() { Id = networkInterface.Id }
                         }
@@ -144,32 +134,20 @@ namespace ManageIPAddress
                             Sku = "2016-Datacenter",
                             Version = "latest"
                         },
-                        DataDisks = new List<DataDisk>()
                     },
                     HardwareProfile = new HardwareProfile() { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
                 };
 
-                vm = (await (await virtualMachines.StartCreateOrUpdateAsync(rgName, vmName, vm)).WaitForCompletionAsync()).Value;
+                var virtualMachineContainer = resourceGroup.GetVirtualMachines();
+                VirtualMachine vm = await virtualMachineContainer.CreateOrUpdate(vmName, vmData).WaitForCompletionAsync();
 
                 var t2 = DateTime.UtcNow;
-                Utilities.Log("Created VM: (took " + (t2 - t1).TotalSeconds + " seconds) " + vm.Id);
-                // Print virtual machine details
-                Utilities.PrintVirtualMachine(vm);
-
-                // Gets the public IP address associated with the VM's primary NIC
-
-                Utilities.Log("Public IP address associated with the VM's primary NIC [After create]");
-                // Print the public IP address details
-
-                var publicIPDetail = (await publicIPAddresses.GetAsync(rgName, publicIPAddressName1)).Value;
-
-                Utilities.PrintIPAddress(publicIPDetail);
+                Console.WriteLine($"Created VM: (took {(t2 - t1).TotalSeconds} seconds) {vmData.Id}");
 
                 // Assign a new public IP address for the VM
-
                 // Define a new public IP address
-
-                var publicIPAddress2 = new PublicIPAddress
+                Console.WriteLine("Creating a public IP address...");
+                var publicIPAddressData2 = new PublicIPAddressData
                 {
                     PublicIPAddressVersion = Azure.ResourceManager.Network.Models.IPVersion.IPv4,
                     PublicIPAllocationMethod = IPAllocationMethod.Dynamic,
@@ -180,81 +158,69 @@ namespace ManageIPAddress
                     }
                 };
 
-                publicIPAddress2 = (await publicIPAddresses.StartCreateOrUpdate(rgName, publicIPAddressName2, publicIPAddress2)
-                     .WaitForCompletionAsync()).Value;
+                PublicIPAddress publicIPAddress2 = await publicIPAddressContainer.CreateOrUpdate(publicIPAddressName2, publicIPAddressData2)
+                     .WaitForCompletionAsync();
+                Console.WriteLine($"Created a public IP address {publicIPAddress.Id}");
 
                 // Update VM's primary NIC to use the new public IP address
-
-                Utilities.Log("Updating the VM's primary NIC with new public IP address");
-
-                networkInterface = new NetworkInterface()
+                Console.WriteLine("Updating the VM's primary NIC with new public IP address");
+                networkInterfaceData = new NetworkInterfaceData
                 {
                     Location = "eastus",
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>()
+                    IpConfigurations =
                     {
                         new NetworkInterfaceIPConfiguration()
                         {
                             Name = "Primary",
                             Primary = true,
-                            Subnet = new Subnet() { Id = vnet.Subnets.First().Id },
+                            Subnet = new SubnetData() { Id = vnet.Data.Subnets.First().Id },
                             PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
-                            PublicIPAddress = new PublicIPAddress() { Id = publicIPAddress2.Id }
+                            PublicIPAddress = new PublicIPAddressData() { Id = publicIPAddress2.Id }
                         }
                     }
                 };
 
-                await (await networkInterfaces.StartCreateOrUpdateAsync(rgName, networkInterfaceName, networkInterface)).WaitForCompletionAsync();
-
-                // Gets the updated public IP address associated with the VM
-
-                // Get the associated public IP address for a virtual machine
-                Utilities.Log("Public IP address associated with the VM's primary NIC [After Update]");
-
-                publicIPDetail = (await publicIPAddresses.GetAsync(rgName, publicIPAddressName2)).Value;
-
-                Utilities.PrintIPAddress(publicIPDetail);
+                await networkInterfaceContainer.CreateOrUpdate(networkInterfaceName, networkInterfaceData).WaitForCompletionAsync();
+                Console.WriteLine("New public IP address associated with the VM's primary NIC");
 
                 // Remove public IP associated with the VM
-
-                Utilities.Log("Removing public IP address associated with the VM");
-
-                networkInterface = new NetworkInterface()
+                Console.WriteLine("Removing public IP address associated with the VM");
+                networkInterfaceData = new NetworkInterfaceData
                 {
                     Location = "eastus",
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>()
+                    IpConfigurations =
                     {
                         new NetworkInterfaceIPConfiguration()
                         {
                             Name = "Primary",
                             Primary = true,
-                            Subnet = new Subnet() { Id = vnet.Subnets.First().Id },
+                            Subnet = new SubnetData() { Id = vnet.Data.Subnets.First().Id },
                             PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
                         }
                     }
                 };
 
-                await (await networkInterfaces.StartCreateOrUpdateAsync(rgName, networkInterfaceName, networkInterface)).WaitForCompletionAsync();
-
-                Utilities.Log("Removed public IP address associated with the VM");
+                await networkInterfaceContainer.CreateOrUpdate(networkInterfaceName, networkInterfaceData).WaitForCompletionAsync();
+                Console.WriteLine("Removed public IP address associated with the VM");
 
                 // Delete the public ip
-                Utilities.Log("Deleting the public IP address");
-                await (await publicIPAddresses.StartDeleteAsync(rgName, publicIPAddressName1)).WaitForCompletionAsync();
-                Utilities.Log("Deleted the public IP address");
+                Console.WriteLine("Deleting the public IP addresses");
+                await publicIPAddress.Delete().WaitForCompletionResponseAsync();
+                Console.WriteLine("Deleted the public IP addresses");
             }
             finally
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.Delete().WaitForCompletionResponseAsync();
                 }
                 catch (NullReferenceException)
                 {
-                    Utilities.Log("Did not create any resources in Azure. No clean up is necessary");
+                    Console.WriteLine("Did not create any resources in Azure. No clean up is necessary");
                 }
                 catch (Exception ex)
                 {
-                    Utilities.Log(ex);
+                    Console.WriteLine(ex);
                 }
             }
         }
@@ -263,14 +229,11 @@ namespace ManageIPAddress
         {
             try
             {
-                // Authenticate
-                var credentials = new DefaultAzureCredential();
-
-                await RunSample(credentials);
+                await RunSample();
             }
             catch (Exception ex)
             {
-                Utilities.Log(ex);
+                Console.WriteLine(ex);
             }
         }
     }

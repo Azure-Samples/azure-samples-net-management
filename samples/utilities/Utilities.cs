@@ -217,73 +217,6 @@ namespace Samples.Utilities
             Utilities.Log(info.ToString());
         }
 
-        public static void PrintNetworkSecurityGroup(NetworkSecurityGroup resource)
-        {
-            var nsgOutput = new StringBuilder();
-            nsgOutput.Append("NSG: ").Append(resource.Id)
-                    .Append("Name: ").Append(resource.Name)
-                    .Append("\n\tLocation: ").Append(resource.Location)
-                    .Append("\n\tTags: ").Append(FormatDictionary(resource.Tags));
-
-            // Output security rules
-            foreach (var rule in resource.SecurityRules)
-            {
-                nsgOutput.Append("\n\tRule: ").Append(rule.Name)
-                        .Append("\n\t\tAccess: ").Append(rule.Access)
-                        .Append("\n\t\tDirection: ").Append(rule.Direction)
-                        .Append("\n\t\tFrom address: ").Append(rule.SourceAddressPrefix)
-                        .Append("\n\t\tFrom port range: ").Append(rule.SourcePortRange)
-                        .Append("\n\t\tTo address: ").Append(rule.DestinationAddressPrefix)
-                        .Append("\n\t\tTo port: ").Append(rule.DestinationPortRange)
-                        .Append("\n\t\tProtocol: ").Append(rule.Protocol)
-                        .Append("\n\t\tPriority: ").Append(rule.Priority);
-            }
-            Utilities.Log(nsgOutput.ToString());
-        }
-
-        public static void PrintVirtualNetwork(VirtualNetwork network)
-        {
-            var info = new StringBuilder();
-            info.Append("Network: ").Append(network.Id)
-                    .Append("Name: ").Append(network.Name)
-                    .Append("\n\tLocation: ").Append(network.Location)
-                    .Append("\n\tTags: ").Append(FormatDictionary(network.Tags))
-                    .Append("\n\tAddress space: ").Append(network.AddressSpace);
-
-            // Output subnets
-            foreach (var subnet in network.Subnets)
-            {
-                info.Append("\n\tSubnet: ").Append(subnet.Name)
-                        .Append("\n\t\tAddress prefix: ").Append(subnet.AddressPrefix);
-
-                // Output associated NSG
-                var subnetNsg = subnet.NetworkSecurityGroup;
-                if (subnetNsg != null)
-                {
-                    info.Append("\n\t\tNetwork security group: ").Append(subnetNsg.Id);
-                }
-
-                // Output associated route table
-                var routeTable = subnet.RouteTable;
-                if (routeTable != null)
-                {
-                    info.Append("\n\tRoute table ID: ").Append(routeTable.Id);
-                }
-            }
-
-            // Output peerings
-            foreach (var peering in network.VirtualNetworkPeerings)
-            {
-                info.Append("\n\tPeering: ").Append(peering.Name)
-                    .Append("\n\t\tRemote network ID: ").Append(peering.RemoteVirtualNetwork.Id)
-                    .Append("\n\t\tPeering state: ").Append(peering.PeeringState)
-                    .Append("\n\t\tIs traffic forwarded from remote network allowed? ").Append(peering.AllowForwardedTraffic)
-                    .Append("\n\t\tGateway use: ").Append(peering.UseRemoteGateways);
-            }
-
-            Utilities.Log(info.ToString());
-        }
-
         public static void PrintVirtualMachine(VirtualMachine virtualMachine)
         {
             var storageProfile = new StringBuilder().Append("\n\tStorageProfile: ");
@@ -422,21 +355,6 @@ namespace Samples.Utilities
                     .Append(networkProfile)
                     .Append(msi)
                     .ToString());
-        }
-
-        public static void PrintIPAddress(PublicIPAddress publicIPAddress)
-        {
-            Utilities.Log(new StringBuilder().Append("Public IP Address: ").Append(publicIPAddress.Id)
-                .Append("Name: ").Append(publicIPAddress.Name)
-                .Append("\n\tLocation: ").Append(publicIPAddress.Location)
-                .Append("\n\tTags: ").Append(FormatDictionary(publicIPAddress.Tags))
-                .Append("\n\tIP Address: ").Append(publicIPAddress.IpAddress)
-                .Append("\n\tLeaf domain label: ").Append(publicIPAddress.DnsSettings.DomainNameLabel)
-                .Append("\n\tFQDN: ").Append(publicIPAddress.DnsSettings.Fqdn)
-                .Append("\n\tReverse FQDN: ").Append(publicIPAddress.DnsSettings.ReverseFqdn)
-                .Append("\n\tIdle timeout (minutes): ").Append(publicIPAddress.IdleTimeoutInMinutes)
-                .Append("\n\tIP allocation method: ").Append(publicIPAddress.PublicIPAllocationMethod)
-                .ToString());
         }
 
         public static void PrintAppConfiguration(ConfigurationStore configurationStore)
