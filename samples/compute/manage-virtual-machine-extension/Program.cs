@@ -3,11 +3,13 @@
 
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
-using Samples.Utilities;
+using Azure.ResourceManager.Resources;
+using Azure.ResourceManager.Resources.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,89 +85,83 @@ namespace ManageVirtualMachineExtension
 
         public static async Task RunSample(TokenCredential credential)
         {
-            string rgName = Utilities.RandomResourceName("rgCOVE", 15);
-            string linuxVmName = Utilities.RandomResourceName("lVM", 10);
-            string windowsVmName = Utilities.RandomResourceName("wVM", 10);
-            string pipDnsLabelLinuxVM = Utilities.RandomResourceName("rgPip1", 25);
-            string pipDnsLabelWindowsVM = Utilities.RandomResourceName("rgPip2", 25);
-            string location = "eastus";
+            string resourceGroupName = "rgCOVE";
+            string linuxVmName = "lVM";
+            string windowsVmName = "wVM";
+            string pipDnsLabelLinuxVM = "rgPip1";
+            string pipDnsLabelWindowsVM = "rgPip2";
+            Location location = Location.EastUS;
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
-            var networkManagementClient = new NetworkManagementClient(subscriptionId, credential);
-            var virtualNetworks = networkManagementClient.VirtualNetworks;
-            var publicIPAddresses = networkManagementClient.PublicIPAddresses;
-            var networkInterfaces = networkManagementClient.NetworkInterfaces;
-            var computeManagementClient = new ComputeManagementClient(subscriptionId, credential);
-            var virtualMachines = computeManagementClient.VirtualMachines;
-            var virtualMachineExtensions = computeManagementClient.VirtualMachineExtensions;
+            ArmClient client = new ArmClient(subscriptionId, credential);
+
+            ResourceGroupContainer resourceGroupContainer = client.DefaultSubscription.GetResourceGroups();
+            ResourceGroupData resourceGroupData = new ResourceGroupData(Location.EastUS);
+            ResourceGroup resourceGroup = await resourceGroupContainer.CreateOrUpdate(resourceGroupName, resourceGroupData).WaitForCompletionAsync();
+
             try
             {
-                await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, location);
-
                 // Create a Linux VM with root (sudo) user
 
                 // Create IP Address
-                Utilities.Log("Creating a IP Address");
-                var ipAddress = new PublicIPAddress()
+                Console.WriteLine("Creating a IP Address");
+                PublicIPAddressData ipAddressData = new PublicIPAddressData
                 {
+                    Location = location,
                     PublicIPAddressVersion = Azure.ResourceManager.Network.Models.IPVersion.IPv4,
                     PublicIPAllocationMethod = IPAllocationMethod.Dynamic,
-                    Location = location,
                 };
 
-                ipAddress = await publicIPAddresses
-                    .StartCreateOrUpdate(rgName, pipDnsLabelLinuxVM, ipAddress).WaitForCompletionAsync();
+                PublicIPAddress ipAddress = await resourceGroup.GetPublicIPAddresses().CreateOrUpdate(pipDnsLabelLinuxVM, ipAddressData).WaitForCompletionAsync();
 
-                Utilities.Log("Created a IP Address");
+                Console.WriteLine("Created a IP Address");
 
                 // Create VNet
-                Utilities.Log("Creating a VNet");
-                var vnet = new VirtualNetwork()
+                Console.WriteLine("Creating a VNet");
+                VirtualNetworkData vnetData = new VirtualNetworkData
                 {
                     Location = location,
-                    AddressSpace = new AddressSpace { AddressPrefixes = new List<string> { "10.0.0.0/16" } },
-                    Subnets = new List<Subnet>
+                    AddressSpace = new AddressSpace { AddressPrefixes = { "10.0.0.0/16" } },
+                    Subnets =
                     {
-                        new Subnet
+                        new SubnetData
                         {
                             Name = "mySubnet",
                             AddressPrefix = "10.0.0.0/28",
                         }
                     },
                 };
-                vnet = await virtualNetworks
-                    .StartCreateOrUpdate(rgName, linuxVmName + "_vent", vnet).WaitForCompletionAsync();
+                VirtualNetwork vnet = await resourceGroup.GetVirtualNetworks().CreateOrUpdate(linuxVmName + "_vent", vnetData).WaitForCompletionAsync();
 
-                Utilities.Log("Created a VNet");
+                Console.WriteLine("Created a VNet");
 
                 // Create Network Interface
-                Utilities.Log("Creating a Network Interface");
-                var nic = new NetworkInterface
+                Console.WriteLine("Creating a Network Interface");
+                NetworkInterfaceData nicData = new NetworkInterfaceData
                 {
                     Location = location,
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>()
-                {
-                    new NetworkInterfaceIPConfiguration
+                    IpConfigurations =
                     {
-                        Name = "Primary",
-                        Primary = true,
-                        Subnet = new Subnet { Id = vnet.Subnets.First().Id },
-                        PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
-                        PublicIPAddress = new PublicIPAddress { Id = ipAddress.Id }
+                        new NetworkInterfaceIPConfiguration
+                        {
+                            Name = "Primary",
+                            Primary = true,
+                            Subnet = vnet.Data.Subnets.First(),
+                            PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
+                            PublicIPAddress = ipAddress.Data
+                        }
                     }
-                }
                 };
-                nic = await networkInterfaces
-                    .StartCreateOrUpdate(rgName, linuxVmName + "_nic", nic).WaitForCompletionAsync();
+                NetworkInterface nic = await resourceGroup.GetNetworkInterfaces().CreateOrUpdate(linuxVmName + "_nic", nicData).WaitForCompletionAsync();
 
-                Utilities.Log("Created a Network Interface");
+                Console.WriteLine("Created a Network Interface");
 
                 // Create VM
-                Utilities.Log("Creating a Linux VM");
+                Console.WriteLine("Creating a Linux VM");
 
-                var linuxVM = new VirtualMachine(location)
+                VirtualMachineData linuxVMData = new VirtualMachineData(location)
                 {
-                    NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile { NetworkInterfaces = new[] { new NetworkInterfaceReference { Id = nic.Id } } },
+                    NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile { NetworkInterfaces = { new NetworkInterfaceReference { Id = nic.Id } } },
                     OsProfile = new OSProfile
                     {
                         ComputerName = linuxVmName,
@@ -185,20 +181,17 @@ namespace ManageVirtualMachineExtension
                             Publisher = "Canonical",
                             Sku = "14.04.5-LTS",
                             Version = "latest"
-                        },
-                        DataDisks = new List<DataDisk>()
+                        }
                     },
                     HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
                 };
 
-                linuxVM = await (await virtualMachines.StartCreateOrUpdateAsync(rgName, linuxVmName, linuxVM)).WaitForCompletionAsync();
+                VirtualMachine linuxVM = await resourceGroup.GetVirtualMachines().CreateOrUpdate(linuxVmName, linuxVMData).WaitForCompletionAsync();
 
-                Utilities.Log("Created a Linux VM:" + linuxVM.Id);
-                Utilities.PrintVirtualMachine(linuxVM);
+                Console.WriteLine("Created a Linux VM:" + linuxVM.Id);
 
                 // Add a second sudo user to Linux VM using VMAccess extension
-
-                var vmExtension = new VirtualMachineExtension(location)
+                VirtualMachineExtensionData vmExtensionData = new VirtualMachineExtensionData(location)
                 {
                     Publisher = linuxVmAccessExtensionPublisherName,
                     TypePropertiesType = linuxVmAccessExtensionTypeName,
@@ -211,14 +204,12 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartCreateOrUpdateAsync(rgName, linuxVmName, linuxVmAccessExtensionName, vmExtension)).WaitForCompletionAsync();
+                VirtualMachineExtensionVirtualMachine vmExtension = await linuxVM.GetVirtualMachineExtensionVirtualMachines().CreateOrUpdate(linuxVmAccessExtensionName, vmExtensionData).WaitForCompletionAsync();
 
-                Utilities.Log("Added a second sudo user to the Linux VM");
+                Console.WriteLine("Added a second sudo user to the Linux VM");
 
                 // Add a third sudo user to Linux VM by updating VMAccess extension
-
-                var vmExtensionUpdate = new VirtualMachineExtensionUpdate
+                VirtualMachineExtensionUpdate vmExtensionUpdate = new VirtualMachineExtensionUpdate
                 {
                     ProtectedSettings = new Dictionary<string, object>
                     {
@@ -228,13 +219,11 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, linuxVmName, linuxVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                vmExtension = await vmExtension.Update(vmExtensionUpdate).WaitForCompletionAsync();
 
-                Utilities.Log("Added a third sudo user to the Linux VM");
+                Console.WriteLine("Added a third sudo user to the Linux VM");
 
                 // Reset ssh password of first user of Linux VM by updating VMAccess extension
-
                 vmExtensionUpdate = new VirtualMachineExtensionUpdate
                 {
                     ProtectedSettings = new Dictionary<string, object>
@@ -245,13 +234,11 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, linuxVmName, linuxVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                vmExtension = await vmExtension.Update(vmExtensionUpdate).WaitForCompletionAsync();
 
-                Utilities.Log("Password of first user of Linux VM has been updated");
+                Console.WriteLine("Password of first user of Linux VM has been updated");
 
                 // Removes the second sudo user from Linux VM using VMAccess extension
-
                 vmExtensionUpdate = new VirtualMachineExtensionUpdate
                 {
                     ProtectedSettings = new Dictionary<string, object>
@@ -260,14 +247,12 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, linuxVmName, linuxVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                vmExtension = await vmExtension.Update(vmExtensionUpdate).WaitForCompletionAsync();
 
-                Utilities.Log("Removed the second user from Linux VM using VMAccess extension");
+                Console.WriteLine("Removed the second user from Linux VM using VMAccess extension");
 
                 // Install MySQL in Linux VM using CustomScript extension
-
-                vmExtension = new VirtualMachineExtension(location)
+                vmExtensionData = new VirtualMachineExtensionData(location)
                 {
                     Publisher = LinuxCustomScriptExtensionPublisherName,
                     TypePropertiesType = LinuxCustomScriptExtensionTypeName,
@@ -280,71 +265,59 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartCreateOrUpdateAsync(rgName, linuxVmName, LinuxCustomScriptExtensionName, vmExtension)).WaitForCompletionAsync();
+                VirtualMachineExtensionVirtualMachine vmCustomScriptExtension = await linuxVM.GetVirtualMachineExtensionVirtualMachines().CreateOrUpdate(LinuxCustomScriptExtensionName, vmExtensionData).WaitForCompletionAsync();
 
-                Utilities.Log("Installed MySql using custom script extension");
-                Utilities.PrintVirtualMachine(linuxVM);
+                Console.WriteLine("Installed MySql using custom script extension");
 
                 // Removes the extensions from Linux VM
+                await vmCustomScriptExtension.DeleteAsync();
+                await vmExtension.DeleteAsync();
 
-                await (await virtualMachineExtensions
-                    .StartDeleteAsync(rgName, linuxVmName, LinuxCustomScriptExtensionName)).WaitForCompletionAsync();
-                await (await virtualMachineExtensions
-                    .StartDeleteAsync(rgName, linuxVmName, linuxVmAccessExtensionName)).WaitForCompletionAsync();
-
-                Utilities.Log("Removed the custom script and VM Access extensions from Linux VM");
-                Utilities.PrintVirtualMachine(linuxVM);
+                Console.WriteLine("Removed the custom script and VM Access extensions from Linux VM");
 
                 // Create a Windows VM with admin user
-
                 // Create IP Address
-
-                Utilities.Log("Creating a IP Address");
-                ipAddress = new PublicIPAddress
+                Console.WriteLine("Creating a IP Address");
+                ipAddressData = new PublicIPAddressData
                 {
                     PublicIPAddressVersion = Azure.ResourceManager.Network.Models.IPVersion.IPv4,
                     PublicIPAllocationMethod = IPAllocationMethod.Dynamic,
                     Location = location,
                 };
 
-                ipAddress = await publicIPAddresses
-                    .StartCreateOrUpdate(rgName, pipDnsLabelWindowsVM, ipAddress).WaitForCompletionAsync();
+                PublicIPAddress windowsIPAddress = await resourceGroup.GetPublicIPAddresses().CreateOrUpdate(pipDnsLabelWindowsVM, ipAddressData).WaitForCompletionAsync();
 
-                Utilities.Log("Created a IP Address");
+                Console.WriteLine("Created a IP Address");
 
                 // Create Network Interface #2
-
-                Utilities.Log("Creating a Network Interface #2");
-                nic = new NetworkInterface
+                Console.WriteLine("Creating a Network Interface #2");
+                nicData = new NetworkInterfaceData
                 {
                     Location = location,
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>
-                {
-                    new NetworkInterfaceIPConfiguration
+                    IpConfigurations =
                     {
-                        Name = "Primary",
-                        Primary = true,
-                        Subnet = new Subnet { Id = vnet.Subnets.First().Id },
-                        PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
-                        PublicIPAddress = new PublicIPAddress { Id = ipAddress.Id }
+                        new NetworkInterfaceIPConfiguration
+                        {
+                            Name = "Primary",
+                            Primary = true,
+                            Subnet = vnet.Data.Subnets.First(),
+                            PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
+                            PublicIPAddress = windowsIPAddress.Data,
+                        }
                     }
-                }
                 };
-                nic = await networkInterfaces
-                    .StartCreateOrUpdate(rgName, windowsVmName + "_nic", nic).WaitForCompletionAsync();
+                NetworkInterface windowsNIC = await resourceGroup.GetNetworkInterfaces().CreateOrUpdate(windowsVmName + "_nic", nicData).WaitForCompletionAsync();
 
-                Utilities.Log("Created a Network Interface");
+                Console.WriteLine("Created a Network Interface");
 
                 // Create Windows VM
+                Console.WriteLine("Creating a Windows VM");
 
-                Utilities.Log("Creating a Windows VM");
-
-                var windowsVM = new VirtualMachine(location)
+                var windowsVMData = new VirtualMachineData(location)
                 {
                     NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile
                     {
-                        NetworkInterfaces = new[]
+                        NetworkInterfaces =
                         {
                             new NetworkInterfaceReference { Id = nic.Id }
                         }
@@ -364,15 +337,13 @@ namespace ManageVirtualMachineExtension
                             Sku = "2016-Datacenter",
                             Version = "latest"
                         },
-                        DataDisks = new List<DataDisk>()
                     },
                     HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
                 };
 
-                windowsVM = await (await virtualMachines
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsVM)).WaitForCompletionAsync();
+                VirtualMachine windowsVM = await resourceGroup.GetVirtualMachines().CreateOrUpdate(windowsVmName, windowsVMData).WaitForCompletionAsync();
 
-                vmExtension = new VirtualMachineExtension(location)
+                vmExtensionData = new VirtualMachineExtensionData(location)
                 {
                     Publisher = windowsCustomScriptExtensionPublisherName,
                     TypePropertiesType = windowsCustomScriptExtensionTypeName,
@@ -385,15 +356,12 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsCustomScriptExtensionName, vmExtension)).WaitForCompletionAsync();
+                VirtualMachineExtensionVirtualMachine windowsVMCustomScriptExtension = await windowsVM.GetVirtualMachineExtensionVirtualMachines().CreateOrUpdate(windowsCustomScriptExtensionName, vmExtensionData).WaitForCompletionAsync();
 
-                Utilities.Log("Created a Windows VM:" + windowsVM.Id);
-                Utilities.PrintVirtualMachine(windowsVM);
+                Console.WriteLine("Created a Windows VM:" + windowsVM.Id);
 
                 // Add a second admin user to Windows VM using VMAccess extension
-
-                vmExtension = new VirtualMachineExtension(location)
+                vmExtensionData = new VirtualMachineExtensionData(location)
                 {
                     Publisher = windowsVmAccessExtensionPublisherName,
                     TypePropertiesType = windowsVmAccessExtensionTypeName,
@@ -406,13 +374,11 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsVmAccessExtensionName, vmExtension)).WaitForCompletionAsync();
+                VirtualMachineExtensionVirtualMachine windowsVMAccessExtension = await windowsVM.GetVirtualMachineExtensionVirtualMachines().CreateOrUpdate(windowsVmAccessExtensionName, vmExtensionData).WaitForCompletionAsync();
 
-                Utilities.Log("Added a second admin user to the Windows VM");
+                Console.WriteLine("Added a second admin user to the Windows VM");
 
                 // Add a third admin user to Windows VM by updating VMAccess extension
-
                 vmExtensionUpdate = new VirtualMachineExtensionUpdate
                 {
                     ProtectedSettings = new Dictionary<string, object>
@@ -422,13 +388,11 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, windowsVmName, windowsVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                windowsVMAccessExtension = await windowsVMAccessExtension.Update(vmExtensionUpdate).WaitForCompletionAsync();
 
-                Utilities.Log("Added a third admin user to the Windows VM");
+                Console.WriteLine("Added a third admin user to the Windows VM");
 
                 // Reset admin password of first user of Windows VM by updating VMAccess extension
-
                 vmExtensionUpdate = new VirtualMachineExtensionUpdate
                 {
                     ProtectedSettings = new Dictionary<string, object>
@@ -438,33 +402,24 @@ namespace ManageVirtualMachineExtension
                     }
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, windowsVmName, windowsVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                windowsVMAccessExtension = await windowsVMAccessExtension.Update(vmExtensionUpdate).WaitForCompletionAsync();
 
 
-                Utilities.Log("Password of first user of Windows VM has been updated");
+                Console.WriteLine("Password of first user of Windows VM has been updated");
 
                 // Removes the extensions from Linux VM
-
-                await (await virtualMachineExtensions
-                    .StartDeleteAsync(rgName, windowsVmName, windowsVmAccessExtensionName)).WaitForCompletionAsync();
-
-                Utilities.Log("Removed the VM Access extensions from Windows VM");
-                Utilities.PrintVirtualMachine(windowsVM);
+                await windowsVMAccessExtension.DeleteAsync();
+                Console.WriteLine("Removed the VM Access extensions from Windows VM");
             }
             finally
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
-                }
-                catch (NullReferenceException)
-                {
-                    Utilities.Log("Did not create any resources in Azure. No clean up is necessary");
+                    await resourceGroup.DeleteAsync();
                 }
                 catch (Exception ex)
                 {
-                    Utilities.Log(ex);
+                    Console.WriteLine(ex);
                 }
             }
         }
@@ -480,7 +435,7 @@ namespace ManageVirtualMachineExtension
             }
             catch (Exception ex)
             {
-                Utilities.Log(ex);
+                Console.WriteLine(ex);
             }
         }
     }

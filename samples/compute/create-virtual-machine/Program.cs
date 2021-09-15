@@ -29,7 +29,7 @@ namespace CreateVMSample
             Location location = Location.WestUS2;
             string resourceGroupName = "QuickStartRG";
             ResourceGroupData resourceGroupData = new ResourceGroupData(location);
-            ResourceGroup resourceGroup = await resourceGroupContainer.CreateOrUpdateAsync(resourceGroupName, resourceGroupData);
+            ResourceGroup resourceGroup = await resourceGroupContainer.CreateOrUpdate(resourceGroupName, resourceGroupData).WaitForCompletionAsync();
             Console.WriteLine("--------Finish create group--------");
 
             // Create a Virtual Machine
@@ -55,7 +55,7 @@ namespace CreateVMSample
                 PlatformFaultDomainCount = 2,
                 Sku = new Azure.ResourceManager.Compute.Models.Sku() { Name = "Aligned" }
             };
-            AvailabilitySet availabilitySet = await resourceGroup.GetAvailabilitySets().CreateOrUpdateAsync(vmName + "_aSet", availabilitySetData);
+            AvailabilitySet availabilitySet = await resourceGroup.GetAvailabilitySets().CreateOrUpdate(vmName + "_aSet", availabilitySetData).WaitForCompletionAsync();
 
             // Create IP Address
             Console.WriteLine("--------Start create IP Address--------");
@@ -66,7 +66,7 @@ namespace CreateVMSample
                 Location = resourceGroup.Data.Location,
             };
 
-            PublicIPAddress ipAddress = await resourceGroup.GetPublicIPAddresses().CreateOrUpdateAsync(vmName + "_ip", ipAddressData);
+            PublicIPAddress ipAddress = await resourceGroup.GetPublicIPAddresses().CreateOrUpdate(vmName + "_ip", ipAddressData).WaitForCompletionAsync();
 
             // Create VNet
             Console.WriteLine("--------Start create VNet--------");
@@ -83,7 +83,7 @@ namespace CreateVMSample
                     }
                 },
             };
-            VirtualNetwork vnet = await resourceGroup.GetVirtualNetworks().CreateOrUpdateAsync(vmName + "_vent", vnetData);
+            VirtualNetwork vnet = await resourceGroup.GetVirtualNetworks().CreateOrUpdate(vmName + "_vent", vnetData).WaitForCompletionAsync();
 
             // Create Network Interface
             Console.WriteLine("--------Start create Network Interface--------");
@@ -102,7 +102,7 @@ namespace CreateVMSample
                     }
                 }
             };
-            NetworkInterface nic = await resourceGroup.GetNetworkInterfaces().CreateOrUpdateAsync(vmName + "_nic", nicData);
+            NetworkInterface nic = await resourceGroup.GetNetworkInterfaces().CreateOrUpdate(vmName + "_nic", nicData).WaitForCompletionAsync();
 
             // Create VM
             Console.WriteLine("--------Start create VM--------");
@@ -144,7 +144,7 @@ namespace CreateVMSample
                 AvailabilitySet = new Azure.ResourceManager.Compute.Models.SubResource() { Id = availabilitySet.Id }
             };
 
-            VirtualMachine vm = await resourceGroup.GetVirtualMachines().CreateOrUpdateAsync(vmName, vmData);
+            VirtualMachine vm = await resourceGroup.GetVirtualMachines().CreateOrUpdate(vmName, vmData).WaitForCompletionAsync();
             Console.WriteLine("VM ID: " + vm.Id);
             Console.WriteLine("--------Done create VM--------");
         }

@@ -7,13 +7,10 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.2.2" />
-    <PackageReference Include="Azure.ResourceManager.Compute" Version="1.0.0-preview.1" />
-    <PackageReference Include="Azure.ResourceManager.Network" Version="1.0.0-preview.1" />
-    <PackageReference Include="Azure.ResourceManager.Storage" Version="1.0.0-preview.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\utilities\Utilities.csproj" />
+    <PackageReference Include="Azure.ResourceManager" Version="1.0.0-beta.3" />
+    <PackageReference Include="Azure.ResourceManager.Compute" Version="1.0.0-beta.2" />
+    <PackageReference Include="Azure.ResourceManager.Network" Version="1.0.0-beta.2" />
+    <PackageReference Include="Azure.ResourceManager.Storage" Version="1.0.0-beta.2" />
   </ItemGroup>
 
 </Project>

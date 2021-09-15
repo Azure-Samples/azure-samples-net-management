@@ -6,18 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="1.16.0" />
-    <PackageReference Include="Azure.Identity" Version="1.4.0" />
-    <PackageReference Include="Azure.ResourceManager" Version="1.0.0-alpha.20210728.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Azure.ResourceManager.Compute">
-      <HintPath>..\..\..\..\azure-sdk-for-net\artifacts\bin\Azure.ResourceManager.Compute\Debug\netstandard2.0\Azure.ResourceManager.Compute.dll</HintPath>
-    </Reference>
-    <Reference Include="Azure.ResourceManager.Network">
-      <HintPath>..\..\..\..\azure-sdk-for-net\artifacts\bin\Azure.ResourceManager.Network\Debug\netstandard2.0\Azure.ResourceManager.Network.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Azure.Identity" Version="1.2.2" />
+    <PackageReference Include="Azure.ResourceManager" Version="1.0.0-beta.3" />
+    <PackageReference Include="Azure.ResourceManager.Compute" Version="1.0.0-beta.2" />
+    <PackageReference Include="Azure.ResourceManager.Network" Version="1.0.0-beta.2" />
   </ItemGroup>
 
 </Project>

@@ -42,8 +42,7 @@ namespace ManageVirtualMachine
             var password = "<password>";
 
             var armClient = new ArmClient(credential);
-            ResourceGroup resourceGroup = await armClient.DefaultSubscription.GetResourceGroups().CreateOrUpdateAsync(
-                rgName, new ResourceGroupData(location));
+            ResourceGroup resourceGroup = await armClient.DefaultSubscription.GetResourceGroups().CreateOrUpdate(rgName, new ResourceGroupData(location)).WaitForCompletionAsync();
 
             try
             {
@@ -57,7 +56,7 @@ namespace ManageVirtualMachine
                     DiskSizeGB = 50,
                     CreationData = new CreationData(DiskCreateOption.Empty)
                 };
-                Disk dataDisk = await resourceGroup.GetDisks().CreateOrUpdateAsync("myDataDisk1", dataDiskData);
+                Disk dataDisk = await resourceGroup.GetDisks().CreateOrUpdate("myDataDisk1", dataDiskData).WaitForCompletionAsync();
                 Console.WriteLine("--------Created data disk--------");
 
                 // Create VNet
@@ -76,7 +75,7 @@ namespace ManageVirtualMachine
                         }
                     },
                 };
-                VirtualNetwork vnet = await resourceGroup.GetVirtualNetworks().CreateOrUpdateAsync(windowsVmName + "_vent", vnetData);
+                VirtualNetwork vnet = await resourceGroup.GetVirtualNetworks().CreateOrUpdate(windowsVmName + "_vent", vnetData).WaitForCompletionAsync();
                 Console.WriteLine("--------Created VNet--------");
 
                 // Create Network Interface
@@ -96,7 +95,7 @@ namespace ManageVirtualMachine
                         }
                     }
                 };
-                NetworkInterface nic = await resourceGroup.GetNetworkInterfaces().CreateOrUpdateAsync(windowsVmName + "_nic", nicData);
+                NetworkInterface nic = await resourceGroup.GetNetworkInterfaces().CreateOrUpdate(windowsVmName + "_nic", nicData).WaitForCompletionAsync();
                 Console.WriteLine("--------Created Network Interface--------");
 
                 var t1 = new DateTime();
@@ -151,7 +150,7 @@ namespace ManageVirtualMachine
                     HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
                 };
 
-                VirtualMachine windowsVM = await resourceGroup.GetVirtualMachines().CreateOrUpdateAsync(windowsVmName, windowsVMData);
+                VirtualMachine windowsVM = await resourceGroup.GetVirtualMachines().CreateOrUpdate(windowsVmName, windowsVMData).WaitForCompletionAsync();
 
                 var t2 = new DateTime();
                 Console.WriteLine($"--------Created Windows VM ({(t2 - t1).TotalSeconds} seconds)--------");
@@ -179,7 +178,7 @@ namespace ManageVirtualMachine
                     winVMUpdate.StorageProfile.DataDisks.Add(d);
                 }
                 winVMUpdate.StorageProfile.DataDisks.Add(new DataDisk(3, DiskCreateOptionTypes.Empty) { DiskSizeGB = 10 });
-                windowsVM = await windowsVM.UpdateAsync(winVMUpdate);
+                windowsVM = await windowsVM.Update(winVMUpdate).WaitForCompletionAsync();
                 Console.WriteLine("--------Added the Data Disk to the Windows VM--------");
 
                 Console.WriteLine("--------Detaching the first Data Disk from the Windows VM--------");
@@ -187,7 +186,7 @@ namespace ManageVirtualMachine
                 var removeDisk = windowsVM.Data.StorageProfile.DataDisks.First(x => x.Lun == 0);
                 windowsVM.Data.StorageProfile.DataDisks.Remove(removeDisk);
 
-                windowsVM = await resourceGroup.GetVirtualMachines().CreateOrUpdateAsync(windowsVM.Data.Name, windowsVM.Data);
+                windowsVM = await resourceGroup.GetVirtualMachines().CreateOrUpdate(windowsVM.Data.Name, windowsVM.Data).WaitForCompletionAsync();
 
                 Console.WriteLine($"--------Detached data disk at lun 0 from VM {windowsVM.Id}--------");
 
@@ -218,7 +217,7 @@ namespace ManageVirtualMachine
                         }
                     }
                 };
-                NetworkInterface nic2 = await resourceGroup.GetNetworkInterfaces().CreateOrUpdateAsync(linuxVmName + "_nic", nicData2);
+                NetworkInterface nic2 = await resourceGroup.GetNetworkInterfaces().CreateOrUpdate(linuxVmName + "_nic", nicData2).WaitForCompletionAsync();
                 Console.WriteLine("--------Created the Network Interface #2--------");
 
                 Console.WriteLine("--------Creating a Linux VM--------");
@@ -255,7 +254,7 @@ namespace ManageVirtualMachine
                     HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
                 };
 
-                VirtualMachine linuxVM = await resourceGroup.GetVirtualMachines().CreateOrUpdateAsync(linuxVmName, linuxVMData);
+                VirtualMachine linuxVM = await resourceGroup.GetVirtualMachines().CreateOrUpdate(linuxVmName, linuxVMData).WaitForCompletionAsync();
                 Console.WriteLine("--------Created the Linux VM--------");
                 Console.WriteLine($"Linux Virtual Machine ID: {linuxVM.Id}");
 
@@ -291,9 +290,9 @@ namespace ManageVirtualMachine
             try
             {
                 // Authenticate
-                var credentials = new DefaultAzureCredential();
+                var credential = new DefaultAzureCredential();
 
-                await RunSample(credentials);
+                await RunSample(credential);
             }
             catch (Exception)
             {
