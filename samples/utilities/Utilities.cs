@@ -12,7 +12,6 @@ using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.EventHubs.Models;
 using Azure.ResourceManager.KeyVault.Models;
 using Azure.ResourceManager.Network.Models;
-using Azure.ResourceManager.Storage.Models;
 using Azure.ResourceManager.Communication.Models;
 
 namespace Samples.Utilities
@@ -207,15 +206,6 @@ namespace Samples.Utilities
             Utilities.Log(info.ToString());
         }
 
-        public static void PrintStorageAccount(StorageAccount storageAccount)
-        {
-            var info = new StringBuilder().Append("Storage Account: ").Append(storageAccount.Id)
-                .Append("Name: ").Append(storageAccount.Name)
-                .Append("\n\tLocation: ").Append(storageAccount.Location)
-                .Append("\n\tSku: ").Append($"{storageAccount.Sku.Name} - {storageAccount.Sku.Tier}");
-
-            Utilities.Log(info.ToString());
-        }
 
         public static void PrintNetworkSecurityGroup(NetworkSecurityGroup resource)
         {
