@@ -43,7 +43,7 @@ namespace ManageIPAddress
             var armClient = new ArmClient(new DefaultAzureCredential());
 
             // implicit conversion from Resource<ResourceGroup> to ResourceGroup, similar cases can be found below
-            ResourceGroup resourceGroup = await armClient.DefaultSubscription.GetResourceGroups().CreateOrUpdate(ResourceGroupName, new ResourceGroupData(Location)).WaitForCompletionAsync();
+            ResourceGroup resourceGroup = await armClient.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(ResourceGroupName, new ResourceGroupData(Location)).WaitForCompletionAsync();
 
             // Assign a public IP address for a VM during its creation
 
@@ -91,7 +91,7 @@ namespace ManageIPAddress
                 Location = Location,
                 IpConfigurations =
                 {
-                    new NetworkInterfaceIPConfiguration()
+                    new NetworkInterfaceIPConfigurationData
                     {
                         Name = "Primary",
                         Primary = true,
@@ -168,7 +168,7 @@ namespace ManageIPAddress
                 Location = Location,
                 IpConfigurations =
                 {
-                    new NetworkInterfaceIPConfiguration()
+                    new NetworkInterfaceIPConfigurationData
                     {
                         Name = "Primary",
                         Primary = true,
@@ -189,7 +189,7 @@ namespace ManageIPAddress
                 Location = Location,
                 IpConfigurations =
                 {
-                    new NetworkInterfaceIPConfiguration()
+                    new NetworkInterfaceIPConfigurationData
                     {
                         Name = "Primary",
                         Primary = true,

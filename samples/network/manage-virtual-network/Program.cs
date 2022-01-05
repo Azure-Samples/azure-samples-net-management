@@ -42,7 +42,7 @@ namespace ManageVirtualNetwork
             var armClient = new ArmClient(new DefaultAzureCredential());
 
             // implicit conversion from Resource<ResourceGroup> to ResourceGroup, similar cases can be found below
-            ResourceGroup resourceGroup = await armClient.DefaultSubscription.GetResourceGroups().CreateOrUpdate(ResourceGroupName, new ResourceGroupData(Location)).WaitForCompletionAsync();
+            ResourceGroup resourceGroup = await armClient.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(ResourceGroupName, new ResourceGroupData(Location)).WaitForCompletionAsync();
 
             // Create a virtual network with specific address-space and two subnet
 
@@ -184,7 +184,7 @@ namespace ManageVirtualNetwork
                 Location = Location,
                 IpConfigurations =
                 {
-                    new NetworkInterfaceIPConfiguration
+                    new NetworkInterfaceIPConfigurationData
                     {
                         Name = "Primary",
                         Primary = true,
@@ -262,7 +262,7 @@ namespace ManageVirtualNetwork
                 Location = Location,
                 IpConfigurations =
                 {
-                    new NetworkInterfaceIPConfiguration
+                    new NetworkInterfaceIPConfigurationData
                     {
                         Name = "Primary",
                         Primary = true,
