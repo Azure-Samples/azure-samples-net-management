@@ -16,7 +16,8 @@ This code sample will show you how to manage Virtual Network using Azure SDK for
 This project framework provides examples for the following services:
 
 ### Network
-* You can find the details for the library [here](https://azure.github.io/azure-sdk/releases/latest/#dotnet).
+
+- You can find the details for the library [here](https://azure.github.io/azure-sdk/releases/latest/mgmt/dotnet.html).
 
 ## Getting Started
 
@@ -24,20 +25,20 @@ This project framework provides examples for the following services:
 
 You will need the following values to authenticate to Azure
 
--   **Subscription ID**
--   **Client ID**
--   **Client Secret**
--   **Tenant ID**
+- **Subscription ID**
+- **Client ID**
+- **Client Secret**
+- **Tenant ID**
 
 These values can be obtained from the portal, here's the instructions:
 
 ### Get Subscription ID
 
-1.  Login into your Azure account
-2.  Select Subscriptions in the left sidebar
-3.  Select whichever subscription is needed
-4.  Click on Overview
-5.  Copy the Subscription ID
+1. Login into your Azure account
+2. Select `Subscriptions` under `Navigation` section in the portal
+3. Select whichever subscription is needed
+4. Click on `Overview`
+5. Copy the `Subscription ID`
 
 ### Get Client ID / Client Secret / Tenant ID
 
@@ -50,36 +51,37 @@ document](https://docs.microsoft.com/azure/active-directory/develop/howto-create
 After you obtained the values, you need to set the following values as
 your environment variables
 
--   `AZURE_CLIENT_ID`
--   `AZURE_CLIENT_SECRET`
--   `AZURE_TENANT_ID`
--   `AZURE_SUBSCRIPTION_ID`
+- `AZURE_CLIENT_ID`
+- `AZURE_CLIENT_SECRET`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
 
 To set the following environment variables on your development system:
 
-Windows (Note: Administrator access is required)
+Windows: (Note: Administrator access is required)
 
-1.  Open the Control Panel
-2.  Click System Security, then System
-3.  Click Advanced system settings on the left
-4.  Inside the System Properties window, click the Environment
-    Variables… button.
-5.  Click on the property you would like to change, then click the Edit…
-    button. If the property name is not listed, then click the New…
-    button.
+1. Open the System Control Panel
+2. Select `Advanced system settings`
+3. Open the `Advanced` tab, then click `Environment Variables...`
+   button.
+4. Click on the property you would like to change, then click the `Edit…`
+   button. If the property name is not listed, then click the `New…`
+   button.
 
 Linux-based OS :
 
-    export AZURE_CLIENT_ID="__CLIENT_ID__"
-    export AZURE_CLIENT_SECRET="__CLIENT_SECRET__"
-    export AZURE_TENANT_ID="__TENANT_ID__"
-    export AZURE_SUBSCRIPTION_ID="__SUBSCRIPTION_ID__"
+```bash
+export AZURE_CLIENT_ID="__CLIENT_ID__"
+export AZURE_CLIENT_SECRET="__CLIENT_SECRET__"
+export AZURE_TENANT_ID="__TENANT_ID__"
+export AZURE_SUBSCRIPTION_ID="__SUBSCRIPTION_ID__"
+```
 
 ### Installation
 
 To complete this tutorial:
 
-* Install .NET Core latest version for [Linux] or [Windows]
+- Install .NET Core latest version for [Linux] or [Windows]
 
 If you don't have an Azure subscription, create a [free account] before you begin.
 
@@ -92,22 +94,20 @@ git clone https://github.com/Azure-Samples/azure-samples-net-management.git
 ```
 
 2. Switch to the project folder:
+
 ```bash
 cd samples/network/manage-virtual-network
 ```
 
 3. Run the application with the `dotnet run` command.
 
-```console
-dotnet run
-```
-
 ## This sample shows how to do following operations to manage Virtual Network
- - Create a virtual network with Subnets.
- - Update a virtual network.
- - Create virtual machines in the virtual network subnets.
- - Create another virtual network.
- - List virtual networks.
+
+- Create a virtual network with Subnets.
+- Update a virtual network.
+- Create virtual machines in the virtual network subnets.
+- Create another virtual network.
+- List virtual networks.
 
 ## More information
 
