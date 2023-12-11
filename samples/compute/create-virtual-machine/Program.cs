@@ -1,5 +1,6 @@
 ﻿using Azure.Identity;
 using Azure.ResourceManager.Resources;
+using Azure.ResourceManager;
 using Azure.ResourceManager.Resources.Models;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
@@ -9,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using Azure.Core;
 
 namespace CreateVMSample
 {
@@ -19,16 +21,19 @@ namespace CreateVMSample
 
         static async Task Main(string[] args)
         {
-            var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
-            var resourceClient = new ResourcesManagementClient(subscriptionId, new DefaultAzureCredential());
+            var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+            var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+            var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+            var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+            ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+            ArmClient client = new ArmClient(credential, subscription);
 
             // Create Resource Group
             Console.WriteLine("--------Start create group--------");
-            var resourceGroups = resourceClient.ResourceGroups;
-            var location = "westus2";
             var resourceGroupName = "QuickStartRG";
-            var resourceGroup = new ResourceGroup(location);
-            resourceGroup = await resourceGroups.CreateOrUpdateAsync(resourceGroupName, resourceGroup);
+            String location = AzureLocation.WestUS2;
+
+            ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, resourceGroupName, new ResourceGroupData(location))).Value;
             Console.WriteLine("--------Finish create group--------");
 
             // Create a Virtual Machine
@@ -119,7 +124,7 @@ namespace CreateVMSample
 
             // Create VM
             Console.WriteLine("--------Start create VM--------");
-            var vm = new VirtualMachine(location)
+            var vm = new VirtualMachineData(location)
             {
                 NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile { NetworkInterfaces = new[] { new NetworkInterfaceReference() { Id = nic.Id } } },
                 OsProfile = new OSProfile
