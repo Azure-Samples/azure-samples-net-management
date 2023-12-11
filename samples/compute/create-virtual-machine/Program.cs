@@ -37,7 +37,7 @@ namespace CreateVMSample
             Console.WriteLine("--------Finish create group--------");
 
             // Create a Virtual Machine
-            await Program.CreateVmAsync(subscriptionId, "QuickStartRG", location, "quickstartvm");
+            await Program.CreateVmAsync(resourceGroup, "QuickStartRG", location, "quickstartvm");
 
             // Delete resource group if necessary
             //Console.WriteLine("--------Start delete group--------");
@@ -47,7 +47,7 @@ namespace CreateVMSample
         }
 
         public static async Task CreateVmAsync(
-            string subscriptionId,
+            ResourceGroupResource resourcegroup,
             string resourceGroupName,
             string location,
             string vmName)

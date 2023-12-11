@@ -348,7 +348,7 @@ namespace Samples.Utilities
                     .ToString());
         }
 
-        public static void PrintAppConfiguration(ConfigurationStore configurationStore)
+        public static void PrintAppConfiguration(AppConfigurationStoreResource configurationStore)
         {
             var info = new StringBuilder().Append("App Configuration: ").Append(configurationStore.Id)
                 .Append("Name: ").Append(configurationStore.Name)
