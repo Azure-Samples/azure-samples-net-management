@@ -3,15 +3,18 @@
 
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
+using Azure.ResourceManager.Resources;
 using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ManageVirtualMachine
 {
@@ -30,9 +33,11 @@ namespace ManageVirtualMachine
         //  - List virtual machines
         //  - Delete a virtual machine.
 
-        public static async Task RunSample(TokenCredential credential)
+        public static async Task RunSample(ArmClient client)
         {
             var region = "westcentralus";
+            var nicName = Utilities.CreateRandomName("nic");
+            var nicName2 = Utilities.CreateRandomName("nic2");
             var windowsVmName = Utilities.CreateRandomName("wVM");
             var linuxVmName = Utilities.CreateRandomName("lVM");
             var rgName = Utilities.CreateRandomName("rgCOMV");
@@ -40,171 +45,156 @@ namespace ManageVirtualMachine
             var password = "<password>";
             var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
-            var networkManagementClient = new NetworkManagementClient(subscriptionId, credential);
-            var virtualNetworks = networkManagementClient.VirtualNetworks;
-            var networkInterfaces = networkManagementClient.NetworkInterfaces;
-            var computeManagementClient = new ComputeManagementClient(subscriptionId, credential);
-            var virtualMachines = computeManagementClient.VirtualMachines;
-            var disks = computeManagementClient.Disks;
-
             try
             {
-                await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
+                String location = AzureLocation.WestUS2;
+
+                ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
                 // Create a Windows virtual machine
-
-                // Create a data disk to attach to VM
-                Utilities.Log("Creating a data disk");
-
-                var dataDisk = new Disk(region)
-                {
-                    DiskSizeGB = 50,
-                    CreationData = new CreationData(DiskCreateOption.Empty)
-                };
-                dataDisk = await (await disks
-                    .StartCreateOrUpdateAsync(rgName, Utilities.CreateRandomName("dsk-"), dataDisk)).WaitForCompletionAsync();
-
-                Utilities.Log("Created a data disk");
-
+                var collection = resourceGroup.GetVirtualMachines();
                 // Create VNet
-                Utilities.Log("Creating a VNet");
-
-                var vnet = new VirtualNetwork
+                Console.WriteLine("--------Start create VNet--------");
+                var vnet = new VirtualNetworkData()
                 {
-                    Location = region,
-                    AddressSpace = new AddressSpace { AddressPrefixes = new List<string>() { "10.0.0.0/16" } },
-                    Subnets = new List<Subnet>
-                    {
-                        new Subnet
-                        {
-                            Name = "mySubnet",
-                            AddressPrefix = "10.0.0.0/28",
-                        }
-                    },
+                    Location = location,
+                    AddressPrefixes = { "10.0.0.0/16" },
+                    Subnets = { new SubnetData() { Name = "SubnetSampleName", AddressPrefix = "10.0.0.0/28" } }
                 };
-                vnet = await virtualNetworks
-                    .StartCreateOrUpdate(rgName, windowsVmName + "_vent", vnet).WaitForCompletionAsync();
-
-                Utilities.Log("Created a VNet");
 
                 // Create Network Interface
-                Utilities.Log("Creating a Network Interface");
-
-                var nic = new NetworkInterface
+                Console.WriteLine("--------Start create Network Interface--------");
+                var nicData = new NetworkInterfaceData()
                 {
-                    Location = region,
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>
-                    {
-                        new NetworkInterfaceIPConfiguration
+                    Location = location,
+                    IPConfigurations = {
+                        new NetworkInterfaceIPConfigurationData()
                         {
-                            Name = "Primary",
-                            Primary = true,
-                            Subnet = new Subnet { Id = vnet.Subnets.First().Id },
-                            PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
+                            Name = "SampleIpConfigName",
+                            PrivateIPAllocationMethod = NetworkIPAllocationMethod.Dynamic,
+                            Primary = false,
+                            Subnet = new SubnetData()
+                            {
+                                Id = vnet.Subnets.ElementAt(0).Id
+                            }
                         }
                     }
                 };
-                nic = await networkInterfaces
-                    .StartCreateOrUpdate(rgName, windowsVmName + "_nic", nic).WaitForCompletionAsync();
-
-                Utilities.Log("Created a Network Interface");
-
+                var nicCollection = resourceGroup.GetNetworkInterfaces();
+                var nic = (await nicCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, nicName, nicData)).Value;
                 var t1 = new DateTime();
-
                 // Create VM
-                Utilities.Log("Creating a Windows VM");
-
-                var windowsVM = new VirtualMachine(region)
+                Console.WriteLine("--------Start create VM--------");
+                var vmData = new VirtualMachineData(location)
                 {
-                    NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile
+                    HardwareProfile = new VirtualMachineHardwareProfile()
                     {
-                        NetworkInterfaces = new[]
-                        {
-                            new NetworkInterfaceReference { Id = nic.Id }
-                        }
+                        VmSize = VirtualMachineSizeType.StandardF2
                     },
-                    OsProfile = new OSProfile
+                    OSProfile = new VirtualMachineOSProfile()
                     {
-                        ComputerName = windowsVmName,
                         AdminUsername = userName,
                         AdminPassword = password,
-                    },
-                    StorageProfile = new StorageProfile
-                    {
-                        ImageReference = new ImageReference
+                        ComputerName = "linux Compute",
+                        LinuxConfiguration = new LinuxConfiguration()
                         {
-                            Offer = "WindowsServer",
-                            Publisher = "MicrosoftWindowsServer",
-                            Sku = "2016-Datacenter",
-                            Version = "latest"
-                        },
-                        DataDisks = new List<DataDisk>
-                        {
-                            new DataDisk(0, DiskCreateOptionTypes.Empty)
-                            {
-                                DiskSizeGB = 10
-                            },
-                            new DataDisk(1, DiskCreateOptionTypes.Empty)
-                            {
-                                Name = Utilities.CreateRandomName("dsk-"),
-                                DiskSizeGB = 100,
-                            },
-                            new DataDisk(2, DiskCreateOptionTypes.Attach)
-                            {
-                                ManagedDisk = new ManagedDiskParameters()
-                                {
-                                    Id = dataDisk.Id
-                                }
-                            }
+                            DisablePasswordAuthentication = true,
                         }
                     },
-                    HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
+                    NetworkProfile = new VirtualMachineNetworkProfile()
+                    {
+                        NetworkInterfaces =
+                    {
+                        new VirtualMachineNetworkInterfaceReference()
+                        {
+                            Id = nic.Id,
+                            Primary = true,
+                        }
+                    }
+                    },
+                    StorageProfile = new VirtualMachineStorageProfile()
+                    {
+                        OSDisk = new VirtualMachineOSDisk(DiskCreateOptionType.FromImage)
+                        {
+                            Name = "Sample",
+                            OSType = SupportedOperatingSystemType.Windows,
+                            Caching = CachingType.ReadWrite,
+                            ManagedDisk = new VirtualMachineManagedDisk()
+                            {
+                                StorageAccountType = StorageAccountType.StandardLrs
+                            }
+                        },
+                        DataDisks =
+                        {
+                            new VirtualMachineDataDisk(1, DiskCreateOptionType.Empty)
+                            {
+                                DiskSizeGB = 100,
+                                ManagedDisk = new VirtualMachineManagedDisk()
+                                {
+                                    StorageAccountType = StorageAccountType.StandardLrs
+                                }
+                            },
+                            new VirtualMachineDataDisk(2, DiskCreateOptionType.Empty)
+                            {
+                                DiskSizeGB = 10,
+                                Caching = CachingType.ReadWrite,
+                                ManagedDisk = new VirtualMachineManagedDisk()
+                                {
+                                    StorageAccountType = StorageAccountType.StandardLrs
+                                }
+                            },
+                        },
+                        ImageReference = new ImageReference()
+                        {
+                            Publisher = "MicrosoftWindowsServer",
+                            Offer = "WindowsServer",
+                            Sku = "2016-Datacenter",
+                            Version = "latest",
+                        }
+                    }
                 };
 
-                windowsVM = (await (await virtualMachines
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsVM)).WaitForCompletionAsync()).Value;
+                var windowsVM = await collection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, windowsVmName, vmData);
+                Console.WriteLine("VM ID: " + windowsVM.Id);
+                Console.WriteLine("--------Done create VM--------");
 
                 var t2 = new DateTime();
                 Utilities.Log($"Created VM: (took {(t2 - t1).TotalSeconds} seconds) " + windowsVM.Id);
                 // Print virtual machine details
-                Utilities.PrintVirtualMachine(windowsVM);
+                Utilities.PrintVirtualMachine(windowsVM.Value);
 
                 // Update - Tag the virtual machine
 
-                var update = new VirtualMachineUpdate
+                var update = new VirtualMachinePatch
                 {
-                    Tags = new Dictionary<string, string>
+                    Tags =
                     {
                         { "who-rocks", "java" },
                         { "where", "on azure" }
                     }
                 };
 
-                windowsVM = await (await virtualMachines.StartUpdateAsync(rgName, windowsVmName, update)).WaitForCompletionAsync();
+                windowsVM = await windowsVM.Value.UpdateAsync(Azure.WaitUntil.Completed, update);
 
                 Utilities.Log("Tagged VM: " + windowsVM.Id);
 
                 // Update - Add data disk
 
-                windowsVM.StorageProfile.DataDisks.Add(new DataDisk(3, DiskCreateOptionTypes.Empty) { DiskSizeGB = 10 });
-                windowsVM = (await (await virtualMachines
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsVM)).WaitForCompletionAsync()).Value;
+                windowsVM.Value.Data.StorageProfile.DataDisks.Add(new VirtualMachineDataDisk(3, DiskCreateOptionType.Empty) { DiskSizeGB = 10 });
 
                 Utilities.Log("Added a data disk to VM" + windowsVM.Id);
-                Utilities.PrintVirtualMachine(windowsVM);
+                Utilities.PrintVirtualMachine(windowsVM.Value);
 
                 // Update - detach data disk
-                var removeDisk = windowsVM.StorageProfile.DataDisks.First(x => x.Lun == 0);
-                windowsVM.StorageProfile.DataDisks.Remove(removeDisk);
-                windowsVM = (await (await virtualMachines
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsVM)).WaitForCompletionAsync()).Value;
+                var removeDisk = windowsVM.Value.Data.StorageProfile.DataDisks.First(x => x.Lun == 0);
+                windowsVM.Value.Data.StorageProfile.DataDisks.Remove(removeDisk);
 
                 Utilities.Log("Detached data disk at lun 0 from VM " + windowsVM.Id);
 
                 // Restart the virtual machine
 
                 Utilities.Log("Restarting VM: " + windowsVM.Id);
-                await (await virtualMachines.StartRestartAsync(rgName, windowsVmName)).WaitForCompletionAsync();
+                await windowsVM.Value.RestartAsync(Azure.WaitUntil.Completed);
 
                 Utilities.Log("Restarted VM: " + windowsVM.Id);
 
@@ -212,7 +202,7 @@ namespace ManageVirtualMachine
 
                 Utilities.Log("Powering OFF VM: " + windowsVM.Id);
 
-                await (await virtualMachines.StartPowerOffAsync(rgName, windowsVmName)).WaitForCompletionAsync();
+                await windowsVM.Value.PowerOffAsync(Azure.WaitUntil.Completed);
 
                 Utilities.Log("Powered OFF VM: " + windowsVM.Id);
 
@@ -220,10 +210,10 @@ namespace ManageVirtualMachine
 
                 Utilities.Log("Creating a Network Interface #2");
 
-                var nic2 = new NetworkInterface
+                var nicData2 = new NetworkInterfaceData()
                 {
                     Location = region,
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>
+                    /*IpConfigurations = new List<NetworkInterfaceIPConfiguration>
                     {
                         new NetworkInterfaceIPConfiguration
                         {
@@ -232,25 +222,39 @@ namespace ManageVirtualMachine
                             Subnet = new Subnet { Id = vnet.Subnets.First().Id },
                             PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
                         }
+                    }*/
+                    IPConfigurations = {
+                        new NetworkInterfaceIPConfigurationData()
+                        {
+                            Name = "Primary",
+                            Primary = true,
+                            Subnet = new SubnetData()
+                            {
+                                Id = vnet.Subnets.ElementAt(0).Id,
+                            }
+                        }
                     }
                 };
-                nic2 = await networkInterfaces
-                    .StartCreateOrUpdate(rgName, linuxVmName + "_nic", nic2).WaitForCompletionAsync();
+                var nic2 = (await nicCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, nicName2, nicData2)).Value;
 
                 Utilities.Log("Created a Network Interface #2");
 
                 Utilities.Log("Creating a Linux VM in the network");
 
-                var linuxVM = new VirtualMachine(region)
+                var linuxVMData = new VirtualMachineData(region)
                 {
-                    NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile
+                    NetworkProfile = new VirtualMachineNetworkProfile()
                     {
-                        NetworkInterfaces = new[]
+                        NetworkInterfaces =
                         {
-                            new NetworkInterfaceReference { Id = nic2.Id }
+                            new VirtualMachineNetworkInterfaceReference()
+                            {
+                                Id = nic2.Id,
+                                Primary = true,
+                            }
                         }
                     },
-                    OsProfile = new OSProfile
+                    OSProfile = new VirtualMachineOSProfile()
                     {
                         ComputerName = linuxVmName,
                         AdminUsername = userName,
@@ -258,10 +262,10 @@ namespace ManageVirtualMachine
                         LinuxConfiguration = new LinuxConfiguration
                         {
                             DisablePasswordAuthentication = false,
-                            ProvisionVMAgent = true
+                            ProvisionVmAgent = true
                         }
                     },
-                    StorageProfile = new StorageProfile
+                    StorageProfile = new VirtualMachineStorageProfile()
                     {
                         ImageReference = new ImageReference
                         {
@@ -270,12 +274,14 @@ namespace ManageVirtualMachine
                             Sku = "18.04-LTS",
                             Version = "latest"
                         },
-                        DataDisks = new List<DataDisk>()
+                        DataDisks =
+                        {
+                        }
                     },
-                    HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
+                    HardwareProfile = new VirtualMachineHardwareProfile() { VmSize = VirtualMachineSizeType.StandardD3V2 },
                 };
 
-                linuxVM = await (await virtualMachines.StartCreateOrUpdateAsync(rgName, linuxVmName, linuxVM)).WaitForCompletionAsync();
+                var linuxVM = (await collection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, linuxVmName, linuxVMData)).Value;
 
                 Utilities.Log("Created a Linux VM (in the same virtual network): " + linuxVM.Id);
                 Utilities.PrintVirtualMachine(linuxVM);
@@ -284,7 +290,7 @@ namespace ManageVirtualMachine
 
                 Utilities.Log("Printing list of VMs =======");
 
-                foreach (var virtualMachine in await virtualMachines.ListAsync(rgName).ToEnumerableAsync())
+                await foreach(var virtualMachine in collection.GetAllAsync())
                 {
                     Utilities.PrintVirtualMachine(virtualMachine);
                 }
@@ -292,7 +298,7 @@ namespace ManageVirtualMachine
                 // Delete the virtual machine
                 Utilities.Log("Deleting VM: " + windowsVM.Id);
 
-                await (await virtualMachines.StartDeleteAsync(rgName, windowsVmName)).WaitForCompletionAsync();
+                await windowsVM.Value.DeleteAsync(Azure.WaitUntil.Completed);
 
                 Utilities.Log("Deleted VM: " + windowsVM.Id);
             }
@@ -318,9 +324,14 @@ namespace ManageVirtualMachine
             try
             {
                 // Authenticate
-                var credentials = new DefaultAzureCredential();
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
-                await RunSample(credentials);
+                await RunSample(client);
             }
             catch (Exception ex)
             {

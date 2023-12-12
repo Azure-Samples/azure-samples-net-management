@@ -3,15 +3,18 @@
 
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
+using Azure.ResourceManager.Resources;
 using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ManageVirtualMachineExtension
 {
@@ -81,172 +84,179 @@ namespace ManageVirtualMachineExtension
         //   - Install MySQL on Linux | something significant on Windows
         //   - Remove extensions
 
-        public static async Task RunSample(TokenCredential credential)
+        public static async Task RunSample(ArmClient client)
         {
             string rgName = Utilities.RandomResourceName("rgCOVE", 15);
+            string publicIpDnsLabel = Utilities.CreateRandomName("pip" + "-");
+            string nicName = Utilities.CreateRandomName("nic");
             string linuxVmName = Utilities.RandomResourceName("lVM", 10);
             string windowsVmName = Utilities.RandomResourceName("wVM", 10);
             string pipDnsLabelLinuxVM = Utilities.RandomResourceName("rgPip1", 25);
             string pipDnsLabelWindowsVM = Utilities.RandomResourceName("rgPip2", 25);
-            string location = "eastus";
+            string location = AzureLocation.EastUS;
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
-            var networkManagementClient = new NetworkManagementClient(subscriptionId, credential);
-            var virtualNetworks = networkManagementClient.VirtualNetworks;
-            var publicIPAddresses = networkManagementClient.PublicIPAddresses;
-            var networkInterfaces = networkManagementClient.NetworkInterfaces;
-            var computeManagementClient = new ComputeManagementClient(subscriptionId, credential);
-            var virtualMachines = computeManagementClient.VirtualMachines;
-            var virtualMachineExtensions = computeManagementClient.VirtualMachineExtensions;
             try
             {
-                await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, location);
+                ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
                 // Create a Linux VM with root (sudo) user
 
                 // Create IP Address
                 Utilities.Log("Creating a IP Address");
-                var ipAddress = new PublicIPAddress()
+                var publicIpAddressCollection = resourceGroup.GetPublicIPAddresses();
+                var publicIPAddressData = new PublicIPAddressData()
                 {
-                    PublicIPAddressVersion = Azure.ResourceManager.Network.Models.IPVersion.IPv4,
-                    PublicIPAllocationMethod = IPAllocationMethod.Dynamic,
-                    Location = location,
+                    DnsSettings =
+                            {
+                                DomainNameLabel = publicIpDnsLabel
+                            }
                 };
-
-                ipAddress = await publicIPAddresses
-                    .StartCreateOrUpdate(rgName, pipDnsLabelLinuxVM, ipAddress).WaitForCompletionAsync();
+                var ipAddress = await publicIpAddressCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, pipDnsLabelLinuxVM, publicIPAddressData);
 
                 Utilities.Log("Created a IP Address");
 
                 // Create VNet
                 Utilities.Log("Creating a VNet");
-                var vnet = new VirtualNetwork()
+                var vnetData = new VirtualNetworkData()
                 {
                     Location = location,
-                    AddressSpace = new AddressSpace { AddressPrefixes = new List<string> { "10.0.0.0/16" } },
-                    Subnets = new List<Subnet>
-                    {
-                        new Subnet
-                        {
-                            Name = "mySubnet",
-                            AddressPrefix = "10.0.0.0/28",
-                        }
-                    },
+                    AddressPrefixes = { "10.0.0.0/16" },
+                    Subnets = { new SubnetData() { Name = "SubnetSampleName", AddressPrefix = "10.0.0.0/28" } }
                 };
-                vnet = await virtualNetworks
-                    .StartCreateOrUpdate(rgName, linuxVmName + "_vent", vnet).WaitForCompletionAsync();
+                var vnetCollection = resourceGroup.GetVirtualNetworks();
+
+                var vnet = (await vnetCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, "vnetSample", vnetData)).Value;
 
                 Utilities.Log("Created a VNet");
 
                 // Create Network Interface
                 Utilities.Log("Creating a Network Interface");
-                var nic = new NetworkInterface
+                var nicData = new NetworkInterfaceData()
                 {
                     Location = location,
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>()
-                {
-                    new NetworkInterfaceIPConfiguration
-                    {
-                        Name = "Primary",
-                        Primary = true,
-                        Subnet = new Subnet { Id = vnet.Subnets.First().Id },
-                        PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
-                        PublicIPAddress = new PublicIPAddress { Id = ipAddress.Id }
+                    IPConfigurations = {
+                        new NetworkInterfaceIPConfigurationData()
+                        {
+                            Name = "SampleIpConfigName",
+                            PrivateIPAllocationMethod = NetworkIPAllocationMethod.Dynamic,
+                            Primary = true,
+                            Subnet = new SubnetData()
+                            {
+                                Id = vnet.Data.Subnets.ElementAt(0).Id
+                            },
+                            PrivateIPAddress = ipAddress.Id
+                        }
                     }
-                }
                 };
-                nic = await networkInterfaces
-                    .StartCreateOrUpdate(rgName, linuxVmName + "_nic", nic).WaitForCompletionAsync();
+                var nicCollection = resourceGroup.GetNetworkInterfaces();
+                var nic = (await nicCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, nicName, nicData)).Value;
 
                 Utilities.Log("Created a Network Interface");
 
                 // Create VM
                 Utilities.Log("Creating a Linux VM");
 
-                var linuxVM = new VirtualMachine(location)
+                var linuxVMData = new VirtualMachineData(location)
                 {
-                    NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile { NetworkInterfaces = new[] { new NetworkInterfaceReference { Id = nic.Id } } },
-                    OsProfile = new OSProfile
+                    NetworkProfile = new VirtualMachineNetworkProfile()
+                    {
+                        NetworkInterfaces =
+                        {
+                            new VirtualMachineNetworkInterfaceReference()
+                            {
+                                Id = nic.Id,
+                                Primary = true,
+                            }
+                        }
+                    },
+                    OSProfile = new VirtualMachineOSProfile()
                     {
                         ComputerName = linuxVmName,
                         AdminUsername = FirstLinuxUserName,
-                        AdminPassword = FirstLinuxUserPassword,
+                        AdminPassword = FirstLinuxUserNewPassword,
                         LinuxConfiguration = new LinuxConfiguration
                         {
                             DisablePasswordAuthentication = false,
-                            ProvisionVMAgent = true
+                            ProvisionVmAgent = true
                         }
                     },
-                    StorageProfile = new StorageProfile
+                    StorageProfile = new VirtualMachineStorageProfile()
                     {
                         ImageReference = new ImageReference
                         {
                             Offer = "UbuntuServer",
                             Publisher = "Canonical",
-                            Sku = "14.04.5-LTS",
+                            Sku = "18.04-LTS",
                             Version = "latest"
                         },
-                        DataDisks = new List<DataDisk>()
+                        DataDisks =
+                        {
+                        }
                     },
-                    HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
+                    HardwareProfile = new VirtualMachineHardwareProfile() { VmSize = VirtualMachineSizeType.StandardD3V2 },
                 };
-
-                linuxVM = await (await virtualMachines.StartCreateOrUpdateAsync(rgName, linuxVmName, linuxVM)).WaitForCompletionAsync();
+                var vmCollection = resourceGroup.GetVirtualMachines();
+                var linuxVM = (await vmCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, linuxVmName, linuxVMData)).Value;
 
                 Utilities.Log("Created a Linux VM:" + linuxVM.Id);
                 Utilities.PrintVirtualMachine(linuxVM);
 
                 // Add a second sudo user to Linux VM using VMAccess extension
 
-                var vmExtension = new VirtualMachineExtension(location)
+                var virtualMachineExtensionCollection = linuxVM.GetVirtualMachineExtensions();
+                var linuxSettings = new
+                {
+                    username = SecondLinuxUserName,
+                    password = SecondLinuxUserPassword,
+                    expiration = SecondLinuxUserExpiration
+                };
+                var linuxBinaryData = BinaryData.FromObjectAsJson(linuxSettings);
+                var vmExtensionData = new VirtualMachineExtensionData(location)
                 {
                     Publisher = linuxVmAccessExtensionPublisherName,
-                    TypePropertiesType = linuxVmAccessExtensionTypeName,
+                    ExtensionType = linuxVmAccessExtensionTypeName,
                     TypeHandlerVersion = linuxVmAccessExtensionVersionName,
-                    ProtectedSettings = new Dictionary<string, object>
-                    {
-                        { "username", SecondLinuxUserName },
-                        { "password", SecondLinuxUserPassword },
-                        { "expiration", SecondLinuxUserExpiration }
-                    }
+                    ProtectedSettings = linuxBinaryData
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartCreateOrUpdateAsync(rgName, linuxVmName, linuxVmAccessExtensionName, vmExtension)).WaitForCompletionAsync();
+                var vmExtension = (await virtualMachineExtensionCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, linuxVmName, vmExtensionData)).Value;
 
                 Utilities.Log("Added a second sudo user to the Linux VM");
 
                 // Add a third sudo user to Linux VM by updating VMAccess extension
 
-                var vmExtensionUpdate = new VirtualMachineExtensionUpdate
+                var linuxSettings2 = new
                 {
-                    ProtectedSettings = new Dictionary<string, object>
-                    {
-                        { "username", ThirdLinuxUserName },
-                        { "password", ThirdLinuxUserPassword },
-                        { "expiration", ThirdLinuxUserExpiration }
-                    }
+                    username = ThirdLinuxUserName,
+                    password = ThirdLinuxUserPassword,
+                    expiration = ThirdLinuxUserExpiration
+                };
+                var linuxBinaryData2 = BinaryData.FromObjectAsJson(linuxSettings2);
+                var vmExtensionUpdatePatch2 = new VirtualMachineExtensionPatch()
+                {
+                    ProtectedSettings = linuxBinaryData2
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, linuxVmName, linuxVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                var vmExtensionUpdate2 = (await vmExtension.UpdateAsync(Azure.WaitUntil.Completed, vmExtensionUpdatePatch2)).Value;
 
                 Utilities.Log("Added a third sudo user to the Linux VM");
 
                 // Reset ssh password of first user of Linux VM by updating VMAccess extension
 
-                vmExtensionUpdate = new VirtualMachineExtensionUpdate
+                var linuxSettings3 = new
                 {
-                    ProtectedSettings = new Dictionary<string, object>
-                    {
-                        { "username", FirstLinuxUserName },
-                        { "password", FirstLinuxUserNewPassword },
-                        { "reset_ssh", "true" }
-                    }
+                    username = FirstLinuxUserName,
+                    password = FirstLinuxUserNewPassword,
+                    reset_ssh = true
+                };
+                var linuxBinaryData3 = BinaryData.FromObjectAsJson(linuxSettings3);
+                var vmExtensionUpdatePatch3 = new VirtualMachineExtensionPatch()
+                {
+                    ProtectedSettings = linuxBinaryData3
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, linuxVmName, linuxVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                var vmExtensionUpdate3 = (await vmExtension.UpdateAsync(Azure.WaitUntil.Completed, vmExtensionUpdatePatch3)).Value;
 
                 Utilities.Log("Password of first user of Linux VM has been updated");
 
@@ -474,9 +484,14 @@ namespace ManageVirtualMachineExtension
             try
             {
                 // Authenticate
-                var credentials = new DefaultAzureCredential();
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
-                await RunSample(credentials);
+                await RunSample(client);
             }
             catch (Exception ex)
             {
