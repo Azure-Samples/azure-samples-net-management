@@ -220,11 +220,25 @@ namespace ManageVirtualMachineExtension
                     ProtectedSettings = linuxBinaryData
                 };
 
-                var vmExtension = (await virtualMachineExtensionCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, linuxVmName, vmExtensionData)).Value;
+                var vmExtension = (await virtualMachineExtensionCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, linuxVmAccessExtensionName, vmExtensionData)).Value;
 
                 Utilities.Log("Added a second sudo user to the Linux VM");
 
                 // Add a third sudo user to Linux VM by updating VMAccess extension
+
+                var linuxSettings1 = new
+                {
+                    username = SecondLinuxUserName,
+                    password = SecondLinuxUserPassword,
+                    expiration = SecondLinuxUserExpiration
+                };
+                var linuxBinaryData1 = BinaryData.FromObjectAsJson(linuxSettings1);
+                var vmExtensionUpdatePatch = new VirtualMachineExtensionPatch()
+                {
+                    ProtectedSettings = linuxBinaryData1
+                };
+
+                var vmExtensionUpdate = (await vmExtension.UpdateAsync(Azure.WaitUntil.Completed, vmExtensionUpdatePatch)).Value;
 
                 var linuxSettings2 = new
                 {
@@ -262,22 +276,23 @@ namespace ManageVirtualMachineExtension
 
                 // Removes the second sudo user from Linux VM using VMAccess extension
 
-                vmExtensionUpdate = new VirtualMachineExtensionUpdate
+                var linuxSettings4 = new
                 {
-                    ProtectedSettings = new Dictionary<string, object>
-                    {
-                        { "remove_user", SecondLinuxUserName },
-                    }
+                    remove_user = SecondLinuxUserName
+                };
+                var linuxBinaryData4 = BinaryData.FromObjectAsJson(linuxSettings4);
+                var vmExtensionUpdatePatch4 = new VirtualMachineExtensionPatch()
+                {
+                    ProtectedSettings = linuxBinaryData4
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, linuxVmName, linuxVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                var vmExtensionUpdate4 = (await vmExtension.UpdateAsync(Azure.WaitUntil.Completed, vmExtensionUpdatePatch4)).Value;
 
                 Utilities.Log("Removed the second user from Linux VM using VMAccess extension");
 
                 // Install MySQL in Linux VM using CustomScript extension
 
-                vmExtension = new VirtualMachineExtension(location)
+                var linuxSettings5 = new
                 {
                     Publisher = LinuxCustomScriptExtensionPublisherName,
                     TypePropertiesType = LinuxCustomScriptExtensionTypeName,
@@ -289,19 +304,21 @@ namespace ManageVirtualMachineExtension
                         { "commandToExecute", MySqlScriptLinuxInstallCommand },
                     }
                 };
+                var linuxBinaryData5 = BinaryData.FromObjectAsJson(linuxSettings5);
+                var vmExtensionUpdatePatch5 = new VirtualMachineExtensionPatch()
+                {
+                    ProtectedSettings = linuxBinaryData5
+                };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartCreateOrUpdateAsync(rgName, linuxVmName, LinuxCustomScriptExtensionName, vmExtension)).WaitForCompletionAsync();
+                var vmExtensionUpdate5 = (await vmExtension.UpdateAsync(Azure.WaitUntil.Completed, vmExtensionUpdatePatch5)).Value;
 
                 Utilities.Log("Installed MySql using custom script extension");
                 Utilities.PrintVirtualMachine(linuxVM);
 
                 // Removes the extensions from Linux VM
 
-                await (await virtualMachineExtensions
-                    .StartDeleteAsync(rgName, linuxVmName, LinuxCustomScriptExtensionName)).WaitForCompletionAsync();
-                await (await virtualMachineExtensions
-                    .StartDeleteAsync(rgName, linuxVmName, linuxVmAccessExtensionName)).WaitForCompletionAsync();
+                await vmExtensionUpdate5.DeleteAsync(Azure.WaitUntil.Completed);
+                await vmExtensionUpdate4.DeleteAsync(Azure.WaitUntil.Completed);
 
                 Utilities.Log("Removed the custom script and VM Access extensions from Linux VM");
                 Utilities.PrintVirtualMachine(linuxVM);
@@ -311,38 +328,38 @@ namespace ManageVirtualMachineExtension
                 // Create IP Address
 
                 Utilities.Log("Creating a IP Address");
-                ipAddress = new PublicIPAddress
+                var windowsIpAddressData = new PublicIPAddressData()
                 {
-                    PublicIPAddressVersion = Azure.ResourceManager.Network.Models.IPVersion.IPv4,
-                    PublicIPAllocationMethod = IPAllocationMethod.Dynamic,
+                    PublicIPAddressVersion = NetworkIPVersion.IPv4,
+                    PublicIPAllocationMethod = NetworkIPAllocationMethod.Dynamic,
                     Location = location,
                 };
 
-                ipAddress = await publicIPAddresses
-                    .StartCreateOrUpdate(rgName, pipDnsLabelWindowsVM, ipAddress).WaitForCompletionAsync();
+                var windowsIpAddress = await publicIpAddressCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, pipDnsLabelWindowsVM, windowsIpAddressData);
 
                 Utilities.Log("Created a IP Address");
 
                 // Create Network Interface #2
 
                 Utilities.Log("Creating a Network Interface #2");
-                nic = new NetworkInterface
+                var nicData2 = new NetworkInterfaceData()
                 {
                     Location = location,
-                    IpConfigurations = new List<NetworkInterfaceIPConfiguration>
+                    IPConfigurations =
                 {
-                    new NetworkInterfaceIPConfiguration
+                    new NetworkInterfaceIPConfigurationData()
                     {
                         Name = "Primary",
                         Primary = true,
-                        Subnet = new Subnet { Id = vnet.Subnets.First().Id },
-                        PrivateIPAllocationMethod = IPAllocationMethod.Dynamic,
-                        PublicIPAddress = new PublicIPAddress { Id = ipAddress.Id }
+                            Subnet = new SubnetData()
+                            {
+                                Id = vnet.Data.Subnets.ElementAt(0).Id
+                            },
+                            PrivateIPAddress = ipAddress.Id
                     }
                 }
                 };
-                nic = await networkInterfaces
-                    .StartCreateOrUpdate(rgName, windowsVmName + "_nic", nic).WaitForCompletionAsync();
+                var nic2 = (await nicCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, windowsVmName + "_nic", nicData2)).Value;
 
                 Utilities.Log("Created a Network Interface");
 
@@ -350,22 +367,25 @@ namespace ManageVirtualMachineExtension
 
                 Utilities.Log("Creating a Windows VM");
 
-                var windowsVM = new VirtualMachine(location)
+                var windowsVMData = new VirtualMachineData(location)
                 {
-                    NetworkProfile = new Azure.ResourceManager.Compute.Models.NetworkProfile
+                    NetworkProfile = new VirtualMachineNetworkProfile()
                     {
-                        NetworkInterfaces = new[]
+                        NetworkInterfaces =
                         {
-                            new NetworkInterfaceReference { Id = nic.Id }
+                            new VirtualMachineNetworkInterfaceReference()
+                            {
+                                Id = nic.Id,
+                            }
                         }
                     },
-                    OsProfile = new OSProfile
+                    OSProfile = new VirtualMachineOSProfile()
                     {
                         ComputerName = windowsVmName,
                         AdminUsername = firstWindowsUserName,
                         AdminPassword = firstWindowsUserPassword,
                     },
-                    StorageProfile = new StorageProfile
+                    StorageProfile = new VirtualMachineStorageProfile()
                     {
                         ImageReference = new ImageReference
                         {
@@ -374,90 +394,94 @@ namespace ManageVirtualMachineExtension
                             Sku = "2016-Datacenter",
                             Version = "latest"
                         },
-                        DataDisks = new List<DataDisk>()
+                        DataDisks =
+                        {
+                        }
                     },
-                    HardwareProfile = new HardwareProfile { VmSize = VirtualMachineSizeTypes.StandardD3V2 },
+                    HardwareProfile = new VirtualMachineHardwareProfile() { VmSize = VirtualMachineSizeType.StandardD3V2 },
                 };
 
-                windowsVM = await (await virtualMachines
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsVM)).WaitForCompletionAsync();
-
-                vmExtension = new VirtualMachineExtension(location)
+                var windowsVM = (await vmCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, windowsVmName, windowsVMData)).Value;
+                var windowsVirtualMachineExtensionCollection = windowsVM.GetVirtualMachineExtensions();
+                var windowsSettings = new
+                {
+                    fileUris = mySQLWindowsInstallScriptFileUris,
+                    commandToExecute = mySqlScriptWindowsInstallCommand,
+                };
+                var windowsBinaryData = BinaryData.FromObjectAsJson(windowsSettings);
+                var vmExtensionData2 = new VirtualMachineExtensionData(location)
                 {
                     Publisher = windowsCustomScriptExtensionPublisherName,
-                    TypePropertiesType = windowsCustomScriptExtensionTypeName,
+                    ExtensionType = windowsCustomScriptExtensionTypeName,
                     TypeHandlerVersion = windowsCustomScriptExtensionVersionName,
                     AutoUpgradeMinorVersion = true,
-                    Settings = new Dictionary<string, object>
-                    {
-                        { "fileUris", mySQLWindowsInstallScriptFileUris },
-                        { "commandToExecute", mySqlScriptWindowsInstallCommand },
-                    }
+                    Settings = windowsBinaryData
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsCustomScriptExtensionName, vmExtension)).WaitForCompletionAsync();
+                var windowsExtension = (await windowsVirtualMachineExtensionCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, windowsCustomScriptExtensionName, vmExtensionData)).Value;
 
                 Utilities.Log("Created a Windows VM:" + windowsVM.Id);
                 Utilities.PrintVirtualMachine(windowsVM);
 
                 // Add a second admin user to Windows VM using VMAccess extension
 
-                vmExtension = new VirtualMachineExtension(location)
+                var windowsSettings1 = new
+                {
+                    username = secondWindowsUserName,
+                    password = secondWindowsUserPassword,
+                };
+                var windowsBinaryData1 = BinaryData.FromObjectAsJson(windowsSettings1);
+                var vmExtensionWindowsData = new VirtualMachineExtensionData(location)
                 {
                     Publisher = windowsVmAccessExtensionPublisherName,
-                    TypePropertiesType = windowsVmAccessExtensionTypeName,
+                    ExtensionType = windowsVmAccessExtensionTypeName,
                     TypeHandlerVersion = windowsVmAccessExtensionVersionName,
                     AutoUpgradeMinorVersion = true,
-                    ProtectedSettings = new Dictionary<string, object>
-                    {
-                        { "username", secondWindowsUserName },
-                        { "password", secondWindowsUserPassword },
-                    }
+                    ProtectedSettings = windowsBinaryData1
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartCreateOrUpdateAsync(rgName, windowsVmName, windowsVmAccessExtensionName, vmExtension)).WaitForCompletionAsync();
+                var windowsExtension1 = (await windowsVirtualMachineExtensionCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, windowsVmAccessExtensionName, vmExtensionData)).Value;
 
                 Utilities.Log("Added a second admin user to the Windows VM");
 
                 // Add a third admin user to Windows VM by updating VMAccess extension
 
-                vmExtensionUpdate = new VirtualMachineExtensionUpdate
+                var windowsSettings2 = new
                 {
-                    ProtectedSettings = new Dictionary<string, object>
-                    {
-                        { "username", thirdWindowsUserName },
-                        { "password", thirdWindowsUserPassword }
-                    }
+                    username = thirdWindowsUserName,
+                    password = thirdWindowsUserPassword,
+                };
+                var windowsBinaryData2 = BinaryData.FromObjectAsJson(windowsSettings2);
+                var windowsExtensionUpdatePatch = new VirtualMachineExtensionPatch()
+                {
+                    ProtectedSettings = windowsBinaryData2
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, windowsVmName, windowsVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                var windowsExtensionUpdate = (await windowsExtension.UpdateAsync(Azure.WaitUntil.Completed, windowsExtensionUpdatePatch)).Value;
 
                 Utilities.Log("Added a third admin user to the Windows VM");
 
                 // Reset admin password of first user of Windows VM by updating VMAccess extension
 
-                vmExtensionUpdate = new VirtualMachineExtensionUpdate
+                var windowsSettings3 = new
                 {
-                    ProtectedSettings = new Dictionary<string, object>
-                    {
-                        { "username", firstWindowsUserName },
-                        { "password", firstWindowsUserNewPassword }
-                    }
+                    username = firstWindowsUserName,
+                    password = firstWindowsUserNewPassword,
+                };
+                var windowsBinaryData3 = BinaryData.FromObjectAsJson(windowsSettings3);
+                var windowsExtensionUpdatePatch2 = new VirtualMachineExtensionPatch()
+                {
+                    ProtectedSettings = windowsBinaryData3
                 };
 
-                vmExtension = await (await virtualMachineExtensions
-                    .StartUpdateAsync(rgName, windowsVmName, windowsVmAccessExtensionName, vmExtensionUpdate)).WaitForCompletionAsync();
+                var windowsExtensionUpdate2 = (await windowsExtension.UpdateAsync(Azure.WaitUntil.Completed, windowsExtensionUpdatePatch2)).Value;
 
 
                 Utilities.Log("Password of first user of Windows VM has been updated");
 
                 // Removes the extensions from Linux VM
 
-                await (await virtualMachineExtensions
-                    .StartDeleteAsync(rgName, windowsVmName, windowsVmAccessExtensionName)).WaitForCompletionAsync();
+                await windowsExtension1.DeleteAsync(Azure.WaitUntil.Completed);
 
                 Utilities.Log("Removed the VM Access extensions from Windows VM");
                 Utilities.PrintVirtualMachine(windowsVM);

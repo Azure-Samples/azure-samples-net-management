@@ -77,7 +77,7 @@ namespace CreateVMSample
                             Primary = false,
                             Subnet = new SubnetData()
                             {
-                                Id = vnet.Subnets.ElementAt(1).Id
+                                Id = vnet.Subnets.ElementAt(0).Id
                             }
                         }
                     }
