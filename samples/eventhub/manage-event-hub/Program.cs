@@ -111,7 +111,7 @@ namespace ManageEventHub
 
                 foreach (var group in consumerGroups)
                 {
-                    Utilities.Print(group);
+                    Utilities.PrintConsumerGroup(group);
                 }
 
                 // Create another event hub in the namespace
@@ -121,7 +121,7 @@ namespace ManageEventHub
                 var eventHub2 = (await eventCollection.CreateOrUpdateAsync(WaitUntil.Completed, eventHubName2, new EventHubData())).Value;
 
                 Utilities.Log("Created second event hub");
-                Utilities.Print(eventHub2);
+                Utilities.PrintEventHub(eventHub2);
 
                 // Create a consumer group in the event hub
 
@@ -133,7 +133,7 @@ namespace ManageEventHub
                     UserMetadata = "sometadata"
                 })).Value;
 
-                Utilities.Print(consumerGroup2);
+                Utilities.PrintConsumerGroup(consumerGroup2);
 
                 // Retrieve consumer groups in the event hub
                 Utilities.Log("Retrieving consumer groups in the second event hub");
@@ -144,7 +144,7 @@ namespace ManageEventHub
 
                 foreach (var group in listResult2)
                 {
-                    Utilities.Print(group);
+                    Utilities.PrintConsumerGroup(group);
                 }
 
                 // Create an event hub namespace with event hub
@@ -161,7 +161,7 @@ namespace ManageEventHub
 
                 await foreach (var eh in eventHubCollection.GetAllAsync())
                 {
-                    Utilities.Print(eh);
+                    Utilities.PrintEventHub(eh);
                 }
 
             }

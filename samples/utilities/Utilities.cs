@@ -88,7 +88,7 @@ namespace Samples.Utilities
             Utilities.Log(eh.ToString());
         }
 
-        public static void Print(EventHubResource resource)
+        public static void PrintEventHub(EventHubResource resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("Eventhub: ").Append(resource.Data.Id)
@@ -108,7 +108,7 @@ namespace Samples.Utilities
             Utilities.Log(info.ToString());
         }
 
-        public static void Print(EventHubsConsumerGroupResource resource)
+        public static void PrintConsumerGroup(EventHubsConsumerGroupResource resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("Event hub consumer group: ").Append(resource.Id)
@@ -117,18 +117,18 @@ namespace Samples.Utilities
             Utilities.Log(info.ToString());
         }
 
-        public static void Print(ArmDisasterRecovery resource)
+        public static void PrintDisasterRecovery(EventHubsDisasterRecoveryResource resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("DisasterRecoveryPairing: ").Append(resource.Id)
-                    .Append("\n\tName: ").Append(resource.Name)
-                    .Append("\n\tAlternate name: ").Append(resource.AlternateName)
-                    .Append("\n\tPartner namespace: ").Append(resource.PartnerNamespace)
-                    .Append("\n\tNamespace role: ").Append(resource.Role);
+                    .Append("\n\tName: ").Append(resource.Data.Name)
+                    .Append("\n\tAlternate name: ").Append(resource.Data.AlternateName)
+                    .Append("\n\tPartner namespace: ").Append(resource.Data.PartnerNamespace)
+                    .Append("\n\tNamespace role: ").Append(resource.Data.Role);
             Utilities.Log(info.ToString());
         }
 
-        public static void Print(AccessKeys resource)
+        public static void PrintAccessKey(EventHubsAccessKeys resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("DisasterRecoveryPairing auth key: ")
