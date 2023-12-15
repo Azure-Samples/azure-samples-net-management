@@ -13,6 +13,7 @@ using Azure.ResourceManager.EventHubs.Models;
 using Azure.ResourceManager.KeyVault.Models;
 using Azure.ResourceManager.Network.Models;
 using Azure.ResourceManager.Communication.Models;
+using Azure.ResourceManager.EventHubs;
 
 namespace Samples.Utilities
 {
@@ -69,37 +70,37 @@ namespace Samples.Utilities
             return armTemplateString;
         }
 
-        public static void Print(EHNamespace resource)
+        public static void PrintNameSpace(EventHubsNamespaceResource resource)
         {
             StringBuilder eh = new StringBuilder("Eventhub Namespace: ")
                 .Append("Eventhub Namespace: ").Append(resource.Id)
-                    .Append("\n\tName: ").Append(resource.Name)
-                    .Append("\n\tLocation: ").Append(resource.Location)
-                    .Append("\n\tTags: ").Append(resource.Tags.ToString())
-                    .Append("\n\tAzureInsightMetricId: ").Append(resource.MetricId)
-                    .Append("\n\tIsAutoInflate enabled: ").Append(resource.IsAutoInflateEnabled)
-                    .Append("\n\tServiceBus endpoint: ").Append(resource.ServiceBusEndpoint)
-                    .Append("\n\tMaximum Throughput Units: ").Append(resource.MaximumThroughputUnits)
-                    .Append("\n\tCreated time: ").Append(resource.CreatedAt)
-                    .Append("\n\tUpdated time: ").Append(resource.UpdatedAt);
+                    .Append("\n\tName: ").Append(resource.Data.Name)
+                    .Append("\n\tLocation: ").Append(resource.Data.Location)
+                    .Append("\n\tTags: ").Append(resource.Data.Tags.ToString())
+                    .Append("\n\tAzureInsightMetricId: ").Append(resource.Data.MetricId)
+                    .Append("\n\tIsAutoInflate enabled: ").Append(resource.Data.IsAutoInflateEnabled)
+                    .Append("\n\tServiceBus endpoint: ").Append(resource.Data.ServiceBusEndpoint)
+                    .Append("\n\tMaximum Throughput Units: ").Append(resource.Data.MaximumThroughputUnits)
+                    .Append("\n\tCreated time: ").Append(resource.Data.CreatedOn)
+                    .Append("\n\tUpdated time: ").Append(resource.Data.UpdatedOn);
             Utilities.Log(eh.ToString());
         }
 
-        public static void Print(Eventhub resource)
+        public static void PrintEventHub(EventHubResource resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("Eventhub: ").Append(resource.Id)
-                    .Append("\n\tName: ").Append(resource.Name)
-                    .Append("\n\tMessage retention in Days: ").Append(resource.MessageRetentionInDays)
-                    .Append("\n\tPartition ids: ").Append(resource.PartitionIds);
-            if (resource.CaptureDescription != null)
+                    .Append("\n\tName: ").Append(resource.Data.Name)
+                    .Append("\n\tMessage retention in Days: ").Append(resource.Data.MessageRetentionInDays)
+                    .Append("\n\tPartition ids: ").Append(resource.Data.PartitionIds);
+            if (resource.Data.CaptureDescription != null)
             {
-                info.Append("\n\t\t\tSize limit in Bytes: ").Append(resource.CaptureDescription.SizeLimitInBytes);
-                info.Append("\n\t\t\tInterval in seconds: ").Append(resource.CaptureDescription.IntervalInSeconds);
-                if (resource.CaptureDescription.Destination != null)
+                info.Append("\n\t\t\tSize limit in Bytes: ").Append(resource.Data.CaptureDescription.SizeLimitInBytes);
+                info.Append("\n\t\t\tInterval in seconds: ").Append(resource.Data.CaptureDescription.IntervalInSeconds);
+                if (resource.Data.CaptureDescription.Destination != null)
                 {
-                    info.Append("\n\t\t\tData capture storage account: ").Append(resource.CaptureDescription.Destination.StorageAccountResourceId);
-                    info.Append("\n\t\t\tData capture storage container: ").Append(resource.CaptureDescription.Destination.BlobContainer);
+                    info.Append("\n\t\t\tData capture storage account: ").Append(resource.Data.CaptureDescription.Destination.StorageAccountResourceId);
+                    info.Append("\n\t\t\tData capture storage container: ").Append(resource.Data.CaptureDescription.Destination.BlobContainer);
                 }
             }
             Utilities.Log(info.ToString());
