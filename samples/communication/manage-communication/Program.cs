@@ -81,7 +81,7 @@ namespace ManageCommunication
                 var resource = (await collection.CreateOrUpdateAsync(WaitUntil.Completed, resourceName, data)).Value;
 
                 Utilities.Log("CommunicationServiceResource");
-                Utilities.Print(resource);
+                Utilities.PrintCommunicationServiceResource(resource);
             }
             catch (Exception e)
             {
@@ -98,7 +98,7 @@ namespace ManageCommunication
                 // Fetch a previously created CommunicationServiceResource
                 Utilities.Log("Waiting for CommunicationServiceCollection.Get()");
                 var resource = (await collection.GetAsync(resourceName)).Value;
-                Utilities.Print(resource);
+                Utilities.PrintCommunicationServiceResource(resource);
             }
             catch (Exception e)
             {
@@ -123,7 +123,7 @@ namespace ManageCommunication
                         ["ExampleTagName2"] = "ExampleTagValue2",
                     }
                 })).Value;
-                Utilities.Print(updateResource);
+                Utilities.PrintCommunicationServiceResource(updateResource);
             }
             catch (Exception e)
             {
@@ -158,7 +158,7 @@ namespace ManageCommunication
 
                 foreach (var resource in resources)
                 {
-                    Utilities.Print(resource);
+                    Utilities.PrintCommunicationServiceResource(resource);
                 }
             }
             catch (Exception e)
