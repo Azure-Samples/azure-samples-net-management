@@ -12,6 +12,7 @@ using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.EventHubs.Models;
 using Azure.ResourceManager.KeyVault.Models;
 using Azure.ResourceManager.Network.Models;
+using Azure.ResourceManager.Communication;
 using Azure.ResourceManager.Communication.Models;
 
 namespace Samples.Utilities
@@ -138,22 +139,22 @@ namespace Samples.Utilities
             Utilities.Log(info.ToString());
         }
 
-        public static void Print(CommunicationServiceResource resource)
+        public static void PrintCommunicationServiceResource(CommunicationServiceResource resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("CommunicationServiceResource")
-                    .Append("\n\t Name: ").Append(resource.Name)
-                    .Append("\n\t ProvisioningState: ").Append(resource.ProvisioningState)
-                    .Append("\n\t HostName: ").Append(resource.HostName)
-                    .Append("\n\t DataLocation: ").Append(resource.DataLocation)
-                    .Append("\n\t NotificationHubId: ").Append(resource.NotificationHubId)
-                    .Append("\n\t ImmutableResourceId: ").Append(resource.ImmutableResourceId)
-                    .Append("\n\t Location: ").Append(resource.Location);
+                    .Append("\n\t Name: ").Append(resource.Data.Name)
+                    .Append("\n\t ProvisioningState: ").Append(resource.Data.ProvisioningState)
+                    .Append("\n\t HostName: ").Append(resource.Data.HostName)
+                    .Append("\n\t DataLocation: ").Append(resource.Data.DataLocation)
+                    .Append("\n\t NotificationHubId: ").Append(resource.Data.NotificationHubId)
+                    .Append("\n\t ImmutableResourceId: ").Append(resource.Data.ImmutableResourceId)
+                    .Append("\n\t Location: ").Append(resource.Data.Location);
 
             string tags = "None";
-            if (resource.Tags != null)
+            if (resource.Data.Tags != null)
             {
-                tags = string.Join(", ", resource.Tags.Select(kvp => kvp.Key + ": " + kvp.Value.ToString()));
+                tags = string.Join(", ", resource.Data.Tags.Select(kvp => kvp.Key + ": " + kvp.Value.ToString()));
             }
             info.Append("\n\t Tags: " + tags);
 
