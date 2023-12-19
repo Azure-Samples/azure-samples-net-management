@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Azure.ResourceManager.AppConfiguration;
 using Azure.ResourceManager.AppConfiguration.Models;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.EventHubs.Models;
@@ -347,12 +347,11 @@ namespace Samples.Utilities
                     .ToString());
         }
 
-        public static void PrintAppConfiguration(ConfigurationStore configurationStore)
+        public static void PrintAppConfiguration(AppConfigurationStoreResource configurationStore)
         {
             var info = new StringBuilder().Append("App Configuration: ").Append(configurationStore.Id)
-                .Append("Name: ").Append(configurationStore.Name)
-                .Append("\n\tLocation: ").Append(configurationStore.Location)
-                .Append("\n\tSku: ").Append(configurationStore.Sku.Name);
+                .Append("Name: ").Append(configurationStore.Data.Name)
+                .Append("\n\tLocation: ").Append(configurationStore.Data.Location);
 
             Utilities.Log(info.ToString());
         }
