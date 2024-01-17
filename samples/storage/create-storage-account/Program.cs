@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-
+using System.Xml.Linq;
+using Azure.Core;
 using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.Resources;
@@ -16,9 +17,14 @@ namespace CreateStorageSample
             try
             {
                 // Authenticate
-                var credential = new DefaultAzureCredential();
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
-                await RunSample(credential);
+                await RunSample(client);
             }
             catch (Exception ex)
             {
@@ -26,33 +32,32 @@ namespace CreateStorageSample
             }
         }
 
-        public static async Task RunSample(DefaultAzureCredential credential)
+        public static async Task RunSample(ArmClient client)
         {
             const string StorageAccountName = "strg1";
             const string ResourceGroupName = "rgNEMV";
-            const string Location = "eastus";
+            AzureLocation location = AzureLocation.EastUS;
 
-            var armClient = new ArmClient(credential);
-            ResourceGroup resourceGroup = await armClient.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(ResourceGroupName, new ResourceGroupData(Location)).WaitForCompletionAsync();
+            ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, ResourceGroupName, new ResourceGroupData(location))).Value;
 
             // Create a storage account
             Console.WriteLine("Creating a Storage Account...");
 
-            var StorageAccountCreateParameters = new StorageAccountCreateParameters(new Sku(SkuName.StandardLRS), Kind.StorageV2, Location);
+            var StorageAccountCreateParameters = new StorageAccountCreateOrUpdateContent(new StorageSku(StorageSkuName.StandardLrs), StorageKind.StorageV2, location);
 
-            var rawResult = await resourceGroup.GetStorageAccounts().CreateOrUpdateAsync(StorageAccountName, StorageAccountCreateParameters);
-            var storageAccount = (await rawResult.WaitForCompletionAsync()).Value;
+            var rawResult = await resourceGroup.GetStorageAccounts().CreateOrUpdateAsync(Azure.WaitUntil.Completed, StorageAccountName, StorageAccountCreateParameters);
+            var storageAccount = rawResult.Value;
 
             Console.WriteLine("Created Storage Account");
             PrintStorageAccount(storageAccount);
         }
 
-        private static void PrintStorageAccount(StorageAccount storageAccount)
+        private static void PrintStorageAccount(StorageAccountResource storageAccount)
         {
             Console.WriteLine($@"Storage Account: {storageAccount.Id}
-Name: {storageAccount.Data.Name}
-Location: {storageAccount.Data.Location}
-Sku: {storageAccount.Data.Sku.Name} - {storageAccount.Data.Sku.Tier}");
+                                 Name: {storageAccount.Data.Name}
+                                 Location: {storageAccount.Data.Location}
+                                 Sku: {storageAccount.Data.Sku.Name} - {storageAccount.Data.Sku.Tier}");
         }
     }
 }
