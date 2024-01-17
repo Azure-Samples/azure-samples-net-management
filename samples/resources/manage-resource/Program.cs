@@ -3,12 +3,16 @@
 
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
 using Azure.ResourceManager.Resources;
+using Azure.ResourceManager.Storage;
+using Azure.ResourceManager.Storage.Models;
 using Azure.ResourceManager.Resources.Models;
 using Samples.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ManageResource
 {
@@ -21,80 +25,43 @@ namespace ManageResource
         // - List resources
         // - Delete a resource.
 
-        public static async Task RunSample(TokenCredential credential)
+        public static async Task RunSample(ArmClient client)
         {
             var resourceGroupName = Utilities.RandomResourceName("rgRSMR", 24);
             var resourceName1 = Utilities.RandomResourceName("rn1", 24);
             var resourceName2 = Utilities.RandomResourceName("rn2", 24);
-            var location = "westus";
+            var location = AzureLocation.EastUS;
             var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
-            var resourceClient = new ResourcesManagementClient(subscriptionId, credential);
-            var resourceGroups = resourceClient.ResourceGroups;
-            var resources = resourceClient.Resources;
+            // Create resource group.
 
+            Utilities.Log("Creating a resource group with name: " + resourceGroupName);
+            ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, resourceGroupName, new ResourceGroupData(location))).Value;
+            Utilities.Log("Created a resource group with name: " + resourceGroupName);
             try
             {
-                // Create resource group.
-
-                Utilities.Log("Creating a resource group with name: " + resourceGroupName);
-
-                var resourceGroup = new ResourceGroup(location);
-                resourceGroup = await resourceGroups.CreateOrUpdateAsync(resourceGroupName, resourceGroup);
 
                 // Create storage account.
 
                 Utilities.Log("Creating a storage account with name: " + resourceName1);
 
-                var rawResult = await resources.StartCreateOrUpdateAsync(
-                    resourceGroupName,
-                    "Microsoft.Storage",
-                    "",
-                    "storageAccounts",
-                    resourceName1,
-                    "2019-06-01",
-                    new GenericResource
-                    {
-                        Location = "westus",
-                        Sku = new Sku()
-                        {
-                            Name = "Standard_LRS",
-                            Tier = "Standard"
-                        },
-                        Kind = "StorageV2",
-                        Properties = new Dictionary<string, object>
-                        {
-                            { "accessTier", "hot" }
-                        }
-                    }
-                    );
-                var result = (await rawResult.WaitForCompletionAsync()).Value;
+                var storageCollection = resourceGroup.GetStorageAccounts();
+                var rawResult = await storageCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, resourceName1, new StorageAccountCreateOrUpdateContent(new StorageSku(StorageSkuName.StandardLrs), StorageKind.StorageV2, location)
+                {
+                    AccessTier = StorageAccountAccessTier.Hot
+                });
+                var storageResource = rawResult.Value;
 
-                Utilities.Log("Storage account created: " + result.Id);
+                Utilities.Log("Storage account created: " + storageResource.Id);
 
                 // Update - set the sku name
 
                 Utilities.Log("Updating the storage account with name: " + resourceName1);
 
-                var rawUpdateResult = await resources.StartCreateOrUpdateByIdAsync(
-                    result.Id,
-                    "2019-06-01",
-                    new GenericResource
-                    {
-                        Location = "westus",
-                        Sku = new Sku()
-                        {
-                            Name = "Standard_RAGRS",
-                            Tier = "Standard"
-                        },
-                        Kind = "StorageV2",
-                        Properties = new Dictionary<string, object>
-                        {
-                            { "accessTier", "hot" }
-                        }
-                    }
-                    );
-                var updateResult = (await rawUpdateResult.WaitForCompletionAsync()).Value;
+                var updateResult = await storageResource.UpdateAsync(new StorageAccountPatch()
+                {
+                    AccessTier = StorageAccountAccessTier.Premium
+                });
 
                 Utilities.Log("Updated the storage account with name: " + resourceName1);
 
@@ -102,31 +69,13 @@ namespace ManageResource
 
                 Utilities.Log("Creating another storage account with name: " + resourceName2);
 
-                var rawResult2 = await resources.StartCreateOrUpdateAsync(
-                    resourceGroupName,
-                    "Microsoft.Storage",
-                    "",
-                    "storageAccounts",
-                    resourceName2,
-                    "2019-06-01",
-                    new GenericResource
-                    {
-                        Location = "westus",
-                        Sku = new Sku
-                        {
-                            Name = "Standard_LRS",
-                            Tier = "Standard"
-                        },
-                        Kind = "StorageV2",
-                        Properties = new Dictionary<string, object>
-                        {
-                            { "accessTier", "hot" }
-                        }
-                    }
-                    );
-                var result2 = (await rawResult2.WaitForCompletionAsync()).Value;
+                var rawResult2 = await storageCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, resourceName1, new StorageAccountCreateOrUpdateContent(new StorageSku(StorageSkuName.StandardLrs), StorageKind.StorageV2, location)
+                {
+                    AccessTier = StorageAccountAccessTier.Hot
+                });
+                var storageResource2 = rawResult2.Value;
 
-                Utilities.Log("Storage account created: " + result2.Id);
+                Utilities.Log("Storage account created: " + storageResource2.Id);
 
                 // List storage accounts.
 
@@ -135,25 +84,16 @@ namespace ManageResource
 
                 Utilities.Log("Listing all storage accounts for resource group: " + resourceGroupName);
 
-                var listResult = await resources.ListByResourceGroupAsync(resourceGroupName).ToEnumerableAsync();
-
-                foreach (var sAccount in listResult)
+                await foreach (var sAccount in storageCollection.GetAllAsync())
                 {
-                    Utilities.Log("Storage account: " + sAccount.Name);
+                    Utilities.Log("Storage account: " + sAccount.Data.Name);
                 }
 
                 // Delete a storage accounts.
 
                 Utilities.Log("Deleting storage account: " + resourceName2);
 
-                await (await resources.StartDeleteAsync(
-                    resourceGroupName,
-                    "Microsoft.Storage",
-                    "",
-                    "storageAccounts",
-                    resourceName2,
-                    "2019-06-01"
-                    )).WaitForCompletionAsync();
+                await storageResource2.DeleteAsync(Azure.WaitUntil.Completed);
 
                 Utilities.Log("Deleted storage account: " + resourceName2);
             }
@@ -163,7 +103,7 @@ namespace ManageResource
                 {
                     Utilities.Log("Deleting Resource Group: " + resourceGroupName);
 
-                    await (await resourceGroups.StartDeleteAsync(resourceGroupName)).WaitForCompletionAsync();
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
 
                     Utilities.Log("Deleted Resource Group: " + resourceGroupName);
                 }
@@ -178,9 +118,14 @@ namespace ManageResource
             try
             {
                 // Authenticate
-                var credentials = new DefaultAzureCredential();
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
-                await RunSample(credentials);
+                await RunSample(client);
             }
             catch (Exception ex)
             {
