@@ -7,15 +7,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Azure.ResourceManager.AppConfiguration.Models;
+using Azure.ResourceManager.AppConfiguration;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.EventHubs.Models;
 using Azure.ResourceManager.KeyVault.Models;
 using Azure.ResourceManager.Network.Models;
+using Azure.ResourceManager.Communication;
 using Azure.ResourceManager.Communication.Models;
 using Azure.ResourceManager.Communication;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.EventHubs;
+using Azure.ResourceManager.KeyVault;
 
 namespace Samples.Utilities
 {
@@ -141,22 +143,22 @@ namespace Samples.Utilities
             Utilities.Log(info.ToString());
         }
 
-        public static void Print(CommunicationServiceResource resource)
+        public static void PrintCommunicationServiceResource(CommunicationServiceResource resource)
         {
             StringBuilder info = new StringBuilder();
             info.Append("CommunicationServiceResource")
-                    .Append("\n\t Name: ").Append(resource.Name)
-                    .Append("\n\t ProvisioningState: ").Append(resource.ProvisioningState)
-                    .Append("\n\t HostName: ").Append(resource.HostName)
-                    .Append("\n\t DataLocation: ").Append(resource.DataLocation)
-                    .Append("\n\t NotificationHubId: ").Append(resource.NotificationHubId)
-                    .Append("\n\t ImmutableResourceId: ").Append(resource.ImmutableResourceId)
-                    .Append("\n\t Location: ").Append(resource.Location);
+                    .Append("\n\t Name: ").Append(resource.Data.Name)
+                    .Append("\n\t ProvisioningState: ").Append(resource.Data.ProvisioningState)
+                    .Append("\n\t HostName: ").Append(resource.Data.HostName)
+                    .Append("\n\t DataLocation: ").Append(resource.Data.DataLocation)
+                    .Append("\n\t NotificationHubId: ").Append(resource.Data.NotificationHubId)
+                    .Append("\n\t ImmutableResourceId: ").Append(resource.Data.ImmutableResourceId)
+                    .Append("\n\t Location: ").Append(resource.Data.Location);
 
             string tags = "None";
-            if (resource.Tags != null)
+            if (resource.Data.Tags != null)
             {
-                tags = string.Join(", ", resource.Tags.Select(kvp => kvp.Key + ": " + kvp.Value.ToString()));
+                tags = string.Join(", ", resource.Data.Tags.Select(kvp => kvp.Key + ": " + kvp.Value.ToString()));
             }
             info.Append("\n\t Tags: " + tags);
 
@@ -185,15 +187,15 @@ namespace Samples.Utilities
             return outputString.ToString();
         }
 
-        public static void PrintVault(Vault vault)
+        public static void PrintVault(KeyVaultResource vault)
         {
             var info = new StringBuilder().Append("Key Vault: ").Append(vault.Id)
-                .Append("Name: ").Append(vault.Name)
-                .Append("\n\tLocation: ").Append(vault.Location)
-                .Append("\n\tSku: ").Append(vault.Properties.Sku.Name).Append(" - ").Append(vault.Properties.Sku.Family)
-                .Append("\n\tVault URI: ").Append(vault.Properties.VaultUri)
+                .Append("Name: ").Append(vault.Data.Name)
+                .Append("\n\tLocation: ").Append(vault.Data.Location)
+                .Append("\n\tSku: ").Append(vault.Data.Properties.Sku.Name).Append(" - ").Append(vault.Data.Properties.Sku.Family)
+                .Append("\n\tVault URI: ").Append(vault.Data.Properties.VaultUri)
                 .Append("\n\tAccess policies: ");
-            foreach (var accessPolicy in vault.Properties.AccessPolicies)
+            foreach (var accessPolicy in vault.Data.Properties.AccessPolicies)
             {
                 info.Append("\n\t\tIdentity:").Append(accessPolicy.ObjectId);
                 if (accessPolicy.Permissions.Keys != null)
@@ -210,55 +212,55 @@ namespace Samples.Utilities
         }
 
 
-        public static void PrintVirtualMachine(VirtualMachine virtualMachine)
+        public static void PrintVirtualMachine(VirtualMachineResource virtualMachine)
         {
             var storageProfile = new StringBuilder().Append("\n\tStorageProfile: ");
-            if (virtualMachine.StorageProfile.ImageReference != null)
+            if (virtualMachine.Data.StorageProfile.ImageReference != null)
             {
                 storageProfile.Append("\n\t\tImageReference:");
-                storageProfile.Append("\n\t\t\tPublisher: ").Append(virtualMachine.StorageProfile.ImageReference.Publisher);
-                storageProfile.Append("\n\t\t\tOffer: ").Append(virtualMachine.StorageProfile.ImageReference.Offer);
-                storageProfile.Append("\n\t\t\tSKU: ").Append(virtualMachine.StorageProfile.ImageReference.Sku);
-                storageProfile.Append("\n\t\t\tVersion: ").Append(virtualMachine.StorageProfile.ImageReference.Version);
+                storageProfile.Append("\n\t\t\tPublisher: ").Append(virtualMachine.Data.StorageProfile.ImageReference.Publisher);
+                storageProfile.Append("\n\t\t\tOffer: ").Append(virtualMachine.Data.StorageProfile.ImageReference.Offer);
+                storageProfile.Append("\n\t\t\tSKU: ").Append(virtualMachine.Data.StorageProfile.ImageReference.Sku);
+                storageProfile.Append("\n\t\t\tVersion: ").Append(virtualMachine.Data.StorageProfile.ImageReference.Version);
             }
 
-            if (virtualMachine.StorageProfile.OsDisk != null)
+            if (virtualMachine.Data.StorageProfile.OSDisk != null)
             {
                 storageProfile.Append("\n\t\tOSDisk:");
-                storageProfile.Append("\n\t\t\tOSType: ").Append(virtualMachine.StorageProfile.OsDisk.OsType);
-                storageProfile.Append("\n\t\t\tName: ").Append(virtualMachine.StorageProfile.OsDisk.Name);
-                storageProfile.Append("\n\t\t\tCaching: ").Append(virtualMachine.StorageProfile.OsDisk.Caching);
-                storageProfile.Append("\n\t\t\tCreateOption: ").Append(virtualMachine.StorageProfile.OsDisk.CreateOption);
-                storageProfile.Append("\n\t\t\tDiskSizeGB: ").Append(virtualMachine.StorageProfile.OsDisk.DiskSizeGB);
-                if (virtualMachine.StorageProfile.OsDisk.Image != null)
+                storageProfile.Append("\n\t\t\tOSType: ").Append(virtualMachine.Data.StorageProfile.OSDisk.OSType);
+                storageProfile.Append("\n\t\t\tName: ").Append(virtualMachine.Data.StorageProfile.OSDisk.Name);
+                storageProfile.Append("\n\t\t\tCaching: ").Append(virtualMachine.Data.StorageProfile.OSDisk.Caching);
+                storageProfile.Append("\n\t\t\tCreateOption: ").Append(virtualMachine.Data.StorageProfile.OSDisk.CreateOption);
+                storageProfile.Append("\n\t\t\tDiskSizeGB: ").Append(virtualMachine.Data.StorageProfile.OSDisk.DiskSizeGB);
+                if (virtualMachine.Data.StorageProfile.OSDisk.ImageUri != null)
                 {
-                    storageProfile.Append("\n\t\t\tImage Uri: ").Append(virtualMachine.StorageProfile.OsDisk.Image.Uri);
+                    storageProfile.Append("\n\t\t\tImage Uri: ").Append(virtualMachine.Data.StorageProfile.OSDisk.ImageUri);
                 }
-                if (virtualMachine.StorageProfile.OsDisk.Vhd != null)
+                if (virtualMachine.Data.StorageProfile.OSDisk.VhdUri != null)
                 {
-                    storageProfile.Append("\n\t\t\tVhd Uri: ").Append(virtualMachine.StorageProfile.OsDisk.Vhd.Uri);
+                    storageProfile.Append("\n\t\t\tVhd Uri: ").Append(virtualMachine.Data.StorageProfile.OSDisk.VhdUri);
                 }
-                if (virtualMachine.StorageProfile.OsDisk.EncryptionSettings != null)
+                if (virtualMachine.Data.StorageProfile.OSDisk.VhdUri != null)
                 {
                     storageProfile.Append("\n\t\t\tEncryptionSettings: ");
-                    storageProfile.Append("\n\t\t\t\tEnabled: ").Append(virtualMachine.StorageProfile.OsDisk.EncryptionSettings.Enabled);
+                    storageProfile.Append("\n\t\t\t\tEnabled: ").Append(virtualMachine.Data.StorageProfile.OSDisk.VhdUri);
                     storageProfile.Append("\n\t\t\t\tDiskEncryptionKey Uri: ").Append(virtualMachine
-                            .StorageProfile
-                            .OsDisk
+                            .Data.StorageProfile
+                            .OSDisk
                             .EncryptionSettings
-                            .DiskEncryptionKey.SecretUrl);
+                            .DiskEncryptionKey.SecretUri);
                     storageProfile.Append("\n\t\t\t\tKeyEncryptionKey Uri: ").Append(virtualMachine
-                            .StorageProfile
-                            .OsDisk
+                            .Data.StorageProfile
+                            .OSDisk
                             .EncryptionSettings
-                            .KeyEncryptionKey.KeyUrl);
+                            .KeyEncryptionKey.KeyUri);
                 }
             }
 
-            if (virtualMachine.StorageProfile.DataDisks != null)
+            if (virtualMachine.Data.StorageProfile.DataDisks != null)
             {
                 var i = 0;
-                foreach (var disk in virtualMachine.StorageProfile.DataDisks)
+                foreach (var disk in virtualMachine.Data.StorageProfile.DataDisks)
                 {
                     storageProfile.Append("\n\t\tDataDisk: #").Append(i++);
                     storageProfile.Append("\n\t\t\tName: ").Append(disk.Name);
@@ -275,38 +277,38 @@ namespace Samples.Utilities
                     }
                     else
                     {
-                        if (disk.Vhd.Uri != null)
+                        if (disk.VhdUri != null)
                         {
-                            storageProfile.Append("\n\t\t\tVhd Uri: ").Append(disk.Vhd.Uri);
+                            storageProfile.Append("\n\t\t\tVhd Uri: ").Append(disk.VhdUri);
                         }
                     }
-                    if (disk.Image != null)
+                    if (disk.ImageUri != null)
                     {
-                        storageProfile.Append("\n\t\t\tImage Uri: ").Append(disk.Image.Uri);
+                        storageProfile.Append("\n\t\t\tImage Uri: ").Append(disk.VhdUri);
                     }
                 }
             }
             StringBuilder osProfile;
-            if (virtualMachine.OsProfile != null)
+            if (virtualMachine.Data.OSProfile != null)
             {
                 osProfile = new StringBuilder().Append("\n\tOSProfile: ");
 
-                osProfile.Append("\n\t\tComputerName:").Append(virtualMachine.OsProfile.ComputerName);
-                if (virtualMachine.OsProfile.WindowsConfiguration != null)
+                osProfile.Append("\n\t\tComputerName:").Append(virtualMachine.Data.OSProfile.ComputerName);
+                if (virtualMachine.Data.OSProfile.WindowsConfiguration != null)
                 {
                     osProfile.Append("\n\t\t\tWindowsConfiguration: ");
                     osProfile.Append("\n\t\t\t\tProvisionVMAgent: ")
-                            .Append(virtualMachine.OsProfile.WindowsConfiguration.ProvisionVMAgent);
+                            .Append(virtualMachine.Data.OSProfile.WindowsConfiguration.ProvisionVmAgent);
                     osProfile.Append("\n\t\t\t\tEnableAutomaticUpdates: ")
-                            .Append(virtualMachine.OsProfile.WindowsConfiguration.EnableAutomaticUpdates);
+                            .Append(virtualMachine.Data.OSProfile.WindowsConfiguration.EnableAutomaticUpdates);
                     osProfile.Append("\n\t\t\t\tTimeZone: ")
-                            .Append(virtualMachine.OsProfile.WindowsConfiguration.TimeZone);
+                            .Append(virtualMachine.Data.OSProfile.WindowsConfiguration.TimeZone);
                 }
-                if (virtualMachine.OsProfile.LinuxConfiguration != null)
+                if (virtualMachine.Data.OSProfile.LinuxConfiguration != null)
                 {
                     osProfile.Append("\n\t\t\tLinuxConfiguration: ");
                     osProfile.Append("\n\t\t\t\tDisablePasswordAuthentication: ")
-                            .Append(virtualMachine.OsProfile.LinuxConfiguration.DisablePasswordAuthentication);
+                            .Append(virtualMachine.Data.OSProfile.LinuxConfiguration.DisablePasswordAuthentication);
                 }
             }
             else
@@ -316,16 +318,16 @@ namespace Samples.Utilities
 
 
             var networkProfile = new StringBuilder().Append("\n\tNetworkProfile: ");
-            foreach (var networkInterfaceId in virtualMachine.NetworkProfile.NetworkInterfaces)
+            foreach (var networkInterfaceId in virtualMachine.Data.NetworkProfile.NetworkInterfaces)
             {
                 networkProfile.Append("\n\t\tId:").Append(networkInterfaceId.Id);
             }
 
             var msi = new StringBuilder().Append("\n\tMSI: ");
-            if (virtualMachine.Identity != null && virtualMachine.Identity.UserAssignedIdentities != null)
+            if (virtualMachine.Data.Identity != null && virtualMachine.Data.Identity.UserAssignedIdentities != null)
             {
                 msi.Append("\n\t\tMSI enabled:").Append("True");
-                foreach (var item in virtualMachine.Identity.UserAssignedIdentities)
+                foreach (var item in virtualMachine.Data.Identity.UserAssignedIdentities)
                 {
                     msi.Append("\n\t\tMSI Active Directory Service Name:").Append(item.Key);
                     msi.Append("\n\t\tMSI Active Directory Service Principal Id:").Append(item.Value.PrincipalId);
@@ -338,11 +340,11 @@ namespace Samples.Utilities
             }
 
             Utilities.Log(new StringBuilder().Append("Virtual Machine: ").Append(virtualMachine.Id)
-                    .Append("Name: ").Append(virtualMachine.Name)
-                    .Append("\n\tLocation: ").Append(virtualMachine.Location)
-                    .Append("\n\tTags: ").Append(FormatDictionary(virtualMachine.Tags))
+                    .Append("Name: ").Append(virtualMachine.Data.Name)
+                    .Append("\n\tLocation: ").Append(virtualMachine.Data.Location)
+                    .Append("\n\tTags: ").Append(FormatDictionary(virtualMachine.Data.Tags))
                     .Append("\n\tHardwareProfile: ")
-                    .Append("\n\t\tSize: ").Append(virtualMachine.HardwareProfile.VmSize)
+                    .Append("\n\t\tSize: ").Append(virtualMachine.Data.HardwareProfile.VmSize)
                     .Append(storageProfile)
                     .Append(osProfile)
                     .Append(networkProfile)
@@ -350,12 +352,11 @@ namespace Samples.Utilities
                     .ToString());
         }
 
-        public static void PrintAppConfiguration(ConfigurationStore configurationStore)
+        public static void PrintAppConfiguration(AppConfigurationStoreResource configurationStore)
         {
             var info = new StringBuilder().Append("App Configuration: ").Append(configurationStore.Id)
-                .Append("Name: ").Append(configurationStore.Name)
-                .Append("\n\tLocation: ").Append(configurationStore.Location)
-                .Append("\n\tSku: ").Append(configurationStore.Sku.Name);
+                .Append("Name: ").Append(configurationStore.Data.Name)
+                .Append("\n\tLocation: ").Append(configurationStore.Data.Location);
 
             Utilities.Log(info.ToString());
         }

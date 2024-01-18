@@ -4,12 +4,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Azure;
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
 using Azure.ResourceManager.Communication;
 using Azure.ResourceManager.Communication.Models;
+using Azure.ResourceManager.Resources;
+using Azure.ResourceManager.Resources.Models;
 using Samples.Utilities;
 
 namespace ManageCommunication
@@ -21,9 +26,14 @@ namespace ManageCommunication
             try
             {
                 // Authenticate
-                var credential = new DefaultAzureCredential();
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
-                await RunSample(credential);
+                await RunSample(client);
             }
             catch (Exception ex)
             {
@@ -31,74 +41,47 @@ namespace ManageCommunication
             }
         }
 
-        public static async Task RunSample(DefaultAzureCredential credential)
+        public static async Task RunSample(ArmClient client)
         {
             String resourceGroupName = Utilities.RandomResourceName("rg-manage-comm-", 24);
             String resourceName = Utilities.RandomResourceName("manage-comm-", 24);
-            String region = "westus";
+            String region = AzureLocation.WestUS;
 
-            CommunicationManagementClient acsClient = CreateCommunicationManagementClient(credential);
-            await ResourceGroupHelper.CreateOrUpdateResourceGroup(resourceGroupName, region);
+            ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, resourceGroupName, new ResourceGroupData(region))).Value;
+            //collection
+            var collection = resourceGroup.GetCommunicationServiceResources();
+            await CreateCommunicationServiceAsync(collection, resourceName);
+            await GetCommunicationServiceAsync(collection, resourceName);
+            await UpdateCommunicationServiceAsync(collection, resourceName);
 
-            await CheckNameAvailabilityAsync(acsClient, resourceName);
-            await CreateCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
-            await GetCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
-            await UpdateCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
+            ListCommunicationServiceByCollection(collection);
 
-            ListCommunicationServiceBySubscription(acsClient);
-            ListCommunicationServiceByResourceGroup(acsClient, resourceGroupName);
+            await ListKeysAsync(collection, resourceName);
+            await RegenerateKeyAsync(collection, resourceName);
+            await RegenerateKeyAsync(collection, resourceName);
 
-            await ListKeysAsync(acsClient, resourceGroupName, resourceName);
-            await RegenerateKeyAsync(acsClient, resourceGroupName, resourceName, KeyType.Primary);
-            await RegenerateKeyAsync(acsClient, resourceGroupName, resourceName, KeyType.Secondary);
+            await LinkNotificationHubAsync(collection, resourceName);
 
-            await LinkNotificationHubAsync(acsClient, resourceGroupName, resourceName);
-
-            await DeleteCommunicationServiceAsync(acsClient, resourceGroupName, resourceName);
+            await DeleteCommunicationServiceAsync(collection, resourceName);
         }
 
-        private static CommunicationManagementClient CreateCommunicationManagementClient(TokenCredential tokenCredential)
-        {
-            var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
-            return new CommunicationManagementClient(subscriptionId, tokenCredential);
-        }
-
-        private static async Task CheckNameAvailabilityAsync(CommunicationManagementClient acsClient, string resourceName)
-        {
-            try
-            {
-                Utilities.Log("\nCommunicationService CheckNameAvailability...");
-
-                Response<NameAvailability> response = await acsClient.CommunicationService.CheckNameAvailabilityAsync(new NameAvailabilityParameters("Microsoft.Communication/CommunicationServices", resourceName));
-
-                Utilities.Log("\tresponse: " + response.ToString());
-                Utilities.Log("\tNameAvailable: " + response.Value.NameAvailable.ToString());
-                Utilities.Log("\tReason: " + response.Value.Reason);
-                Utilities.Log("\tMessage: " + response.Value.Message);
-            }
-            catch (Exception e)
-            {
-                Utilities.Log("CheckNameAvailability encountered: " + e.Message);
-            }
-        }
-
-        private static async Task CreateCommunicationServiceAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
+        private static async Task CreateCommunicationServiceAsync(CommunicationServiceResourceCollection collection, string resourceName)
         {
             try
             {
                 Utilities.Log("\nCommunicationService Create...");
-
-                // Set up a CommunicationServiceResource with attributes of the resource we intend to create
-                var resource = new CommunicationServiceResource { Location = "global", DataLocation = "UnitedStates" };
+                // Data
+                var data = new CommunicationServiceResourceData(new AzureLocation("global"))
+                {
+                    DataLocation = new AzureLocation("UnitedStates")
+                };
 
                 // Create a resource in the specificed resource group and waits for a response
-                Utilities.Log("Waiting for acsClient.CommunicationService.StartCreateOrUpdateAsync");
-                var operation = await acsClient.CommunicationService.StartCreateOrUpdateAsync(resourceGroupName, resourceName, resource);
+                Utilities.Log("Waiting for acsClient.CommunicationServiceCollection.CreateOrUpdateAsync");
+                var resource = (await collection.CreateOrUpdateAsync(WaitUntil.Completed, resourceName, data)).Value;
 
-                Utilities.Log("Gained the CommunicationServiceCreateOrUpdateOperation. Waiting for it to complete...");
-                Response<CommunicationServiceResource> response = await operation.WaitForCompletionAsync();
-                Utilities.Log("\tresponse: " + response.ToString());
-                Utilities.Print(response.Value);
+                Utilities.Log("CommunicationServiceResource");
+                Utilities.PrintCommunicationServiceResource(resource);
             }
             catch (Exception e)
             {
@@ -106,17 +89,16 @@ namespace ManageCommunication
             }
         }
 
-        private static async Task GetCommunicationServiceAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
+        private static async Task GetCommunicationServiceAsync(CommunicationServiceResourceCollection collection, string resourceName)
         {
             try
             {
                 Utilities.Log("\nCommunicationService Fetch...");
 
                 // Fetch a previously created CommunicationServiceResource
-                Utilities.Log("Waiting for acsClient.CommunicationService.StartCreateOrUpdateAsync");
-                Response<CommunicationServiceResource> response = await acsClient.CommunicationService.GetAsync(resourceGroupName, resourceName);
-                Utilities.Log("\tresponse: " + response.ToString());
-                Utilities.Print(response.Value);
+                Utilities.Log("Waiting for CommunicationServiceCollection.Get()");
+                var resource = (await collection.GetAsync(resourceName)).Value;
+                Utilities.PrintCommunicationServiceResource(resource);
             }
             catch (Exception e)
             {
@@ -124,24 +106,24 @@ namespace ManageCommunication
             }
         }
 
-        private static async Task UpdateCommunicationServiceAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
+        private static async Task UpdateCommunicationServiceAsync(CommunicationServiceResourceCollection collection, string resourceName)
         {
             try
             {
                 Utilities.Log("\nCommunicationService Update...");
 
-                // Create a CommunicationServiceResource with the updated resource attributes
-                var resource = new CommunicationServiceResource { Location = "global", DataLocation = "UnitedStates" };
-
-                resource.Tags.Add("ExampleTagName1", "ExampleTagValue1");
-                resource.Tags.Add("ExampleTagName2", "ExampleTagValue2");
-
-                // Update an existing resource in Azure with the attributes in `resource` and wait for a response
-                Utilities.Log("Waiting for acsClient.CommunicationService.StartCreateOrUpdateAsync");
-                Response<CommunicationServiceResource> response = await acsClient.CommunicationService.UpdateAsync(resourceGroupName, resourceName, resource);
-
-                Utilities.Log("\tresponse: " + response.ToString());
-                Utilities.Print(response.Value);
+                // Get Resource
+                var resource = (await collection.GetAsync(resourceName)).Value;
+                //Update
+                var updateResource = (await resource.UpdateAsync(new CommunicationServiceResourcePatch()
+                {
+                    Tags =
+                    {
+                        ["ExampleTagName1"] = "ExampleTagValue1",
+                        ["ExampleTagName2"] = "ExampleTagValue2",
+                    }
+                })).Value;
+                Utilities.PrintCommunicationServiceResource(updateResource);
             }
             catch (Exception e)
             {
@@ -149,17 +131,14 @@ namespace ManageCommunication
             }
         }
 
-        private static async Task DeleteCommunicationServiceAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
+        private static async Task DeleteCommunicationServiceAsync(CommunicationServiceResourceCollection collection, string resourceName)
         {
             try
             {
                 Utilities.Log("\nCommunicationService Delete...");
 
-                CommunicationServiceDeleteOperation operation = await acsClient.CommunicationService.StartDeleteAsync(resourceGroupName, resourceName);
-
-                Utilities.Log("Gained the CommunicationServiceDeleteOperation. Waiting for it to complete...");
-                Response<Response> response = await operation.WaitForCompletionAsync();
-                Utilities.Log("\tresponse: " + response.ToString());
+                var resource = (await collection.GetAsync(resourceName)).Value;
+                await resource.DeleteAsync(WaitUntil.Completed);
             }
             catch (Exception e)
             {
@@ -167,57 +146,39 @@ namespace ManageCommunication
             }
         }
 
-        private static void ListCommunicationServiceBySubscription(CommunicationManagementClient acsClient)
+        private static void ListCommunicationServiceByCollection(CommunicationServiceResourceCollection collection)
         {
             try
             {
-                Utilities.Log("\nCommunicationService List by Subscription...");
+                Utilities.Log("\nCommunicationService List by Collection...");
 
                 // Fetch all Azure Communication Services resources in the subscription
-                var resources = acsClient.CommunicationService.ListBySubscription();
+                var resources = collection.GetAll();
                 Utilities.Log("Found number of resources: " + resources.ToArray().Length);
 
                 foreach (var resource in resources)
                 {
-                    Utilities.Print(resource);
+                    Utilities.PrintCommunicationServiceResource(resource);
                 }
             }
             catch (Exception e)
             {
-                Utilities.Log("ListCommunicationServiceBySubscription encountered: " + e.Message);
+                Utilities.Log("ListCommunicationServiceByCollection encountered: " + e.Message);
             }
         }
 
-        private static void ListCommunicationServiceByResourceGroup(CommunicationManagementClient acsClient, string resourceGroupName)
-        {
-            try
-            {
-                Utilities.Log("\nCommunicationService List by Resource Group...");
-
-                var resources = acsClient.CommunicationService.ListByResourceGroup(resourceGroupName);
-                Utilities.Log("Found number of resources: " + resources.ToArray().Length);
-                foreach (var resource in resources)
-                {
-                    Utilities.Print(resource);
-                }
-            }
-            catch (Exception e)
-            {
-                Utilities.Log("ListCommunicationServiceByResourceGroup encountered: " + e.Message);
-            }
-        }
-
-        private static async Task ListKeysAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
+        private static async Task ListKeysAsync(CommunicationServiceResourceCollection collection, string resourceName)
         {
             try
             {
                 Utilities.Log("\nCommunicationService List Keys...");
 
-                Response<CommunicationServiceKeys> response = await acsClient.CommunicationService.ListKeysAsync(resourceGroupName, resourceName);
-                Utilities.Log("\tPrimaryKey: " + response.Value.PrimaryKey);
-                Utilities.Log("\tSecondaryKey: " + response.Value.SecondaryKey);
-                Utilities.Log("\tPrimaryConnectionString: " + response.Value.PrimaryConnectionString);
-                Utilities.Log("\tSecondaryConnectionString: " + response.Value.SecondaryConnectionString);
+                var resource = (await collection.GetAsync(resourceName)).Value;
+                var keys = await resource.GetKeysAsync();
+                Utilities.Log("\tPrimaryKey: " + keys.Value.PrimaryKey);
+                Utilities.Log("\tSecondaryKey: " + keys.Value.SecondaryKey);
+                Utilities.Log("\tPrimaryConnectionString: " + keys.Value.PrimaryConnectionString);
+                Utilities.Log("\tSecondaryConnectionString: " + keys.Value.SecondaryConnectionString);
             }
             catch (Exception e)
             {
@@ -225,20 +186,28 @@ namespace ManageCommunication
             }
         }
 
-        private static async Task RegenerateKeyAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName, KeyType type)
+        private static async Task RegenerateKeyAsync(CommunicationServiceResourceCollection collection, string resourceName)
         {
             try
             {
                 Utilities.Log("\nCommunicationService Regenerate Keys...");
 
-                var keyTypeParameters = new RegenerateKeyParameters();
-                keyTypeParameters.KeyType = type;
+                var resource = (await collection.GetAsync(resourceName)).Value;
+                var keys = await resource.GetKeysAsync();
+                string primaryKey = keys.Value.PrimaryKey;
+                string secondaryKey = keys.Value.SecondaryKey;
+                string primaryConnectionString = keys.Value.PrimaryConnectionString;
+                string secondaryConnectionString = keys.Value.SecondaryConnectionString;
+                var content = new RegenerateCommunicationServiceKeyContent()
+                {
+                    KeyType = CommunicationServiceKeyType.Primary
+                };
+                var newkeys = await resource.RegenerateKeyAsync(content);
 
-                Response<CommunicationServiceKeys> response = await acsClient.CommunicationService.RegenerateKeyAsync(resourceGroupName, resourceName, keyTypeParameters);
-                Utilities.Log("\tPrimaryKey: " + response.Value.PrimaryKey);
-                Utilities.Log("\tSecondaryKey: " + response.Value.SecondaryKey);
-                Utilities.Log("\tPrimaryConnectionString: " + response.Value.PrimaryConnectionString);
-                Utilities.Log("\tSecondaryConnectionString: " + response.Value.SecondaryConnectionString);
+                Utilities.Log("\tPrimaryKey: " + newkeys.Value.PrimaryKey);
+                Utilities.Log("\tSecondaryKey: " + newkeys.Value.SecondaryKey);
+                Utilities.Log("\tPrimaryConnectionString: " + newkeys.Value.PrimaryConnectionString);
+                Utilities.Log("\tSecondaryConnectionString: " + newkeys.Value.SecondaryConnectionString);
             }
             catch (Exception e)
             {
@@ -246,17 +215,17 @@ namespace ManageCommunication
             }
         }
 
-        private static async Task LinkNotificationHubAsync(CommunicationManagementClient acsClient, string resourceGroupName, string resourceName)
+        private static async Task LinkNotificationHubAsync(CommunicationServiceResourceCollection collection, string resourceName)
         {
             try
             {
                 Utilities.Log("\nCommunicationService Link Notification Hub...");
-
+                var resource = (await collection.GetAsync(resourceName)).Value;
                 var notificationHubId = Environment.GetEnvironmentVariable("AZURE_NOTIFICATION_HUB_ID");
                 var notificationHubConnectionString = Environment.GetEnvironmentVariable("AZURE_NOTIFICATION_HUB_CONNECTION_STRING");
 
-                Response<LinkedNotificationHub> response = await acsClient.CommunicationService.LinkNotificationHubAsync(resourceGroupName, resourceName, new LinkNotificationHubParameters(notificationHubId, notificationHubConnectionString));
-                Utilities.Log("\tresponse: " + response.ToString());
+                var parameter = new LinkNotificationHubContent(new ResourceIdentifier(notificationHubId), notificationHubConnectionString);
+                var hub = await resource.LinkNotificationHubAsync(parameter);
             }
             catch (Exception e)
             {

@@ -3,6 +3,7 @@
 
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Resources.Models;
 using Samples.Utilities;
@@ -21,41 +22,37 @@ namespace ManageResourceGroup
         //  - List resource groups
         //  - Delete a resource group.
 
-        public static async Task RunSample(TokenCredential credential)
+        public static async Task RunSample(ArmClient client)
         {
             var rgName = Utilities.RandomResourceName("rgRSMA", 24);
             var rgName2 = Utilities.RandomResourceName("rgRSMA", 24);
             var resourceTagName = Utilities.RandomResourceName("rgRSTN", 24);
             var resourceTagValue = Utilities.RandomResourceName("rgRSTV", 24);
-            var location = "westus";
+            var location = AzureLocation.WestUS;
             var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
 
-            var resourceClient = new ResourcesManagementClient(subscriptionId, credential);
-            var resourceGroups = resourceClient.ResourceGroups;
+            // Create resource group.
+
+            Utilities.Log("Creating a resource group with name: " + rgName);
+
+            ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
+
+            Utilities.Log("Created a resource group with name: " + rgName);
 
             try
             {
-                // Create resource group.
-
-                Utilities.Log("Creating a resource group with name: " + rgName);
-
-                var resourceGroup = new ResourceGroup(location);
-                await resourceGroups.CreateOrUpdateAsync(rgName, resourceGroup);
-
-                Utilities.Log("Created a resource group with name: " + rgName);
 
                 // Update the resource group.
 
                 Utilities.Log("Updating the resource group with name: " + rgName);
 
-                resourceGroup = new ResourceGroup(location)
+                await resourceGroup.UpdateAsync(new ResourceGroupPatch()
                 {
-                    Tags = new Dictionary<string, string>
-                        {
-                            { resourceTagName, resourceTagValue }
-                        }
-                };
-                await resourceGroups.CreateOrUpdateAsync(rgName, resourceGroup);
+                    Tags =
+                    {
+                        [resourceTagName] = resourceTagValue
+                    }
+                });
 
                 Utilities.Log("Updated the resource group with name: " + rgName);
 
@@ -63,8 +60,7 @@ namespace ManageResourceGroup
 
                 Utilities.Log("Creating another resource group with name: " + rgName2);
 
-                var resourceGroup2 = new ResourceGroup(location);
-                await resourceGroups.CreateOrUpdateAsync(rgName2, resourceGroup2);
+                ResourceGroupResource resourceGroup2 = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName2, new ResourceGroupData(location))).Value;
 
                 Utilities.Log("Created another resource group with name: " + rgName2);
 
@@ -72,18 +68,17 @@ namespace ManageResourceGroup
 
                 Utilities.Log("Listing all resource groups");
 
-                var listResult = await resourceGroups.ListAsync().ToEnumerableAsync();
 
-                foreach (var rGroup in listResult)
+                await foreach (var rGroup in client.GetDefaultSubscription().GetResourceGroups().GetAllAsync())
                 {
-                    Utilities.Log("Resource group: " + rGroup.Name);
+                    Utilities.Log("Resource group: " + rGroup.Data.Name);
                 }
 
                 // Delete a resource group.
 
                 Utilities.Log("Deleting resource group: " + rgName2);
 
-                await (await resourceGroups.StartDeleteAsync(rgName2)).WaitForCompletionAsync();
+                await resourceGroup2.DeleteAsync(Azure.WaitUntil.Completed);
 
                 Utilities.Log("Deleted resource group: " + rgName2);
             }
@@ -93,7 +88,7 @@ namespace ManageResourceGroup
                 {
                     Utilities.Log("Deleting Resource Group: " + rgName);
 
-                    await (await resourceGroups.StartDeleteAsync(rgName)).WaitForCompletionAsync();
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
 
                     Utilities.Log("Deleted Resource Group: " + rgName);
                 }
@@ -109,9 +104,14 @@ namespace ManageResourceGroup
             try
             {
                 // Authenticate
-                var credentials = new DefaultAzureCredential();
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
-                await RunSample(credentials);
+                await RunSample(client);
             }
             catch (Exception ex)
             {
