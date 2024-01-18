@@ -6,8 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using Azure.ResourceManager.AppConfiguration;
+using Azure.ResourceManager.AppConfiguration.Models;
 using Azure.ResourceManager.Compute.Models;
 using Azure.ResourceManager.EventHubs.Models;
 using Azure.ResourceManager.KeyVault.Models;
