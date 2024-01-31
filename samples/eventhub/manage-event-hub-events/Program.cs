@@ -33,11 +33,11 @@ namespace ManageEventHubEvents
             string rgName = Utilities.RandomResourceName("rgEvHb", 15);
             string namespaceName = Utilities.RandomResourceName("ns", 15);
             string eventHubName = "FirstEventHub";
-
+            ResourceGroupResource resourceGroup = null;
 
             try
             {
-                ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
+                resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
                 // Creates a Event Hub namespace and an Event Hub in it.
                 Utilities.Log("Creating event hub namespace and event hub");
@@ -118,7 +118,7 @@ namespace ManageEventHubEvents
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {
