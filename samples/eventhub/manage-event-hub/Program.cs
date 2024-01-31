@@ -39,10 +39,10 @@ namespace ManageEventHub
             string storageAccountName = Utilities.RandomResourceName("stg", 14);
             string eventHubName1 = Utilities.RandomResourceName("eh", 14);
             string eventHubName2 = Utilities.RandomResourceName("eh", 14);
-
+            ResourceGroupResource resourceGroup = null;
             try
             {
-                ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
+                resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
                 // Create an event hub namespace
 
@@ -169,7 +169,7 @@ namespace ManageEventHub
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {

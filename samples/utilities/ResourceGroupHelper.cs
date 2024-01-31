@@ -14,15 +14,10 @@ namespace Samples.Utilities
         public static DefaultAzureCredential Credentials = new DefaultAzureCredential();
 
         public static string SubscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
-
-        public static ResourcesManagementClient ResourceClient;
-
-        public static ResourceGroupsOperations ResourceGroups;
+        public 
 
         static ResourceGroupHelper()
         {
-            ResourceClient = new ResourcesManagementClient(SubscriptionId, Credentials);
-            ResourceGroups = ResourceClient.ResourceGroups;
         }
 
         public static async Task CreateOrUpdateResourceGroup(string rgName, string location)

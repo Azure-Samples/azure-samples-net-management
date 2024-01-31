@@ -36,11 +36,10 @@ namespace ManageKeyVault
             string vaultName2 = Utilities.RandomResourceName("vault2", 20);
             string rgName = Utilities.RandomResourceName("rgNEMV", 24);
             string location = AzureLocation.EastUS;
+            ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
             try
             {
-                ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
-
                 // Create a key vault with empty access policy
 
                 Utilities.Log("Creating a key vault...");
@@ -177,7 +176,7 @@ namespace ManageKeyVault
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {
