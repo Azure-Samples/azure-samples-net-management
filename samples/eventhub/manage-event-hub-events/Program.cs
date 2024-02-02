@@ -6,8 +6,10 @@ using Azure.Identity;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Producer;
+using Azure.ResourceManager;
 using Azure.ResourceManager.EventHubs;
 using Azure.ResourceManager.EventHubs.Models;
+using Azure.ResourceManager.Resources;
 using Samples.Utilities;
 using System;
 using System.Collections.Generic;
@@ -24,74 +26,63 @@ namespace ManageEventHubEvents
 
     public class Program
     {
-        public static async Task RunSample(TokenCredential credential)
+        public static async Task RunSample(ArmClient client)
         {
-            string region = "eastus";
+            string location = AzureLocation.EastUS;
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
             string rgName = Utilities.RandomResourceName("rgEvHb", 15);
             string namespaceName = Utilities.RandomResourceName("ns", 15);
             string eventHubName = "FirstEventHub";
-
-            var eventHubsManagementClient = new EventHubsManagementClient(subscriptionId, credential);
-            var namespaces = eventHubsManagementClient.Namespaces;
-            var eventHubs = eventHubsManagementClient.EventHubs;
+            ResourceGroupResource resourceGroup = null;
 
             try
             {
-                await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
+                resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
                 // Creates a Event Hub namespace and an Event Hub in it.
                 Utilities.Log("Creating event hub namespace and event hub");
 
                 Utilities.Log("Creating a namespace");
 
-                var rawResult = await namespaces.StartCreateOrUpdateAsync(
-                    rgName,
-                    namespaceName,
-                    new EHNamespace
-                    {
-                        Location = "eastus2"
-                    });
-                var ehNamespace = (await rawResult.WaitForCompletionAsync()).Value;
+                var ehNamespaceCollection = resourceGroup.GetEventHubsNamespaces();
+                var ehNamespace = (await ehNamespaceCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, namespaceName, new EventHubsNamespaceData(AzureLocation.EastUS2))).Value;
 
-                Utilities.Print(ehNamespace);
+                Utilities.PrintNameSpace(ehNamespace);
                 Utilities.Log("Created a namespace");
 
-                var eventHub = (await eventHubs.CreateOrUpdateAsync(
-                    rgName,
-                    ehNamespace.Name,
-                    eventHubName,
-                    new Eventhub
+                var eventHubCollection = ehNamespace.GetEventHubs();
+                var eventHub = (await eventHubCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, eventHubName, new EventHubData()
+                {
+                    Status = EventHubEntityStatus.Active,
+                    PartitionCount = 4,
+                    RetentionDescription = new RetentionDescription()
                     {
-                        MessageRetentionInDays = 4,
-                        PartitionCount = 4,
-                        Status = EntityStatus.Active,
+                        RetentionTimeInHours = 48,
                     }
-                    )).Value;
+                })).Value;
 
-                Utilities.Log($"Created event hub namespace {ehNamespace.Name} and event hub {eventHubName}");
-                Utilities.Print(ehNamespace);
+                Utilities.Log($"Created event hub namespace {ehNamespace.Data.Name} and event hub {eventHubName}");
+                Utilities.PrintEventHub(eventHub);
 
                 // Create a Authorization Rule for Event Hub created.
                 Utilities.Log("Creating a Authorization Rule");
 
-                var listenRule = (await eventHubs.CreateOrUpdateAuthorizationRuleAsync(
-                    rgName,
-                    namespaceName,
-                    eventHubName,
-                    "listenrule1",
-                    new AuthorizationRule
+                var listenRuleCollection = eventHub.GetEventHubAuthorizationRules();
+                var listenRule = (await listenRuleCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, "listenrule1", new EventHubsAuthorizationRuleData()
+                {
+                    Rights =
                     {
-                        Rights = new List<AccessRights>() { AccessRights.Listen, AccessRights.Send }
+                        EventHubsAccessRight.Listen,
+                        EventHubsAccessRight.Send
                     }
-                    )).Value;
+                })).Value;
 
                 Utilities.Log("Created a Authorization Rule");
 
                 // Send events using dataplane eventhub sdk.
                 Utilities.Log("Sending events");
 
-                var keys = (await eventHubs.ListKeysAsync(rgName, namespaceName, eventHubName, listenRule.Name)).Value;
+                var keys = (await listenRule.GetKeysAsync()).Value;
                 var producerClient = new EventHubProducerClient(keys.PrimaryConnectionString, eventHubName);
 
                 using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
@@ -127,7 +118,7 @@ namespace ManageEventHubEvents
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {
@@ -145,9 +136,14 @@ namespace ManageEventHubEvents
             try
             {
                 // Authenticate
-                var credentials = new DefaultAzureCredential();
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
-                await RunSample(credentials);
+                await RunSample(client);
             }
             catch (Exception ex)
             {
