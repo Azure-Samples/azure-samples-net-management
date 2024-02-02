@@ -35,10 +35,10 @@ namespace ManageEventHubGeoDisasterRecovery
             string eventHubName = Utilities.RandomResourceName("eh", 14);
             bool isFailOverSucceeded = false;
             EventHubsDisasterRecoveryResource pairing = null;
-
+            ResourceGroupResource resourceGroup = null;
             try
             {
-                ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
+                resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
                 // Create resource group for the namespaces and recovery pairings
 
@@ -158,7 +158,7 @@ namespace ManageEventHubGeoDisasterRecovery
                     {
                         Utilities.Log("Pairing breaking failed:" + ex.Message);
                     }
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {

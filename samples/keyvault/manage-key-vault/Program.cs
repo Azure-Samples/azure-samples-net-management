@@ -3,10 +3,14 @@
 
 using Azure.Core;
 using Azure.Identity;
+using Azure.ResourceManager;
 using Azure.ResourceManager.KeyVault;
 using Azure.ResourceManager.KeyVault.Models;
+using Azure.ResourceManager.Resources;
 using Samples.Utilities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ManageKeyVault
@@ -22,7 +26,7 @@ namespace ManageKeyVault
         //   - Create another key vault
         //   - List key vaults
         //   - Delete a key vault.
-        public static async Task RunSample(TokenCredential credential)
+        public static async Task RunSample(ArmClient client)
         {
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
             Guid tenantId = new Guid(Environment.GetEnvironmentVariable("AZURE_TENANT_ID"));
@@ -31,119 +35,148 @@ namespace ManageKeyVault
             string vaultName1 = Utilities.RandomResourceName("vault1", 20);
             string vaultName2 = Utilities.RandomResourceName("vault2", 20);
             string rgName = Utilities.RandomResourceName("rgNEMV", 24);
-            string region = "eastus";
-
-            var keyVaultManagementClient = new KeyVaultManagementClient(subscriptionId, credential);
-            var vaults = keyVaultManagementClient.Vaults;
+            string location = AzureLocation.EastUS;
+            ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
             try
             {
-                await ResourceGroupHelper.CreateOrUpdateResourceGroup(rgName, region);
-
                 // Create a key vault with empty access policy
 
                 Utilities.Log("Creating a key vault...");
 
-                var vaultProperties = new VaultProperties(tenantId, new Sku(SkuName.Standard))
+                var vaultCollection = resourceGroup.GetKeyVaults();
+                var vaultProperties = new KeyVaultProperties(tenantId, new KeyVaultSku(KeyVaultSkuFamily.A, KeyVaultSkuName.Standard))
                 {
-                    AccessPolicies = new[] { new AccessPolicyEntry(tenantId, objectId, new Permissions()) }
+                    AccessPolicies =
+                    {
+                        new KeyVaultAccessPolicy(tenantId, objectId, new IdentityAccessPermissions())
+                    }
                 };
-                var vaultParameters = new VaultCreateOrUpdateParameters(region, vaultProperties);
-
-                var rawResult = await vaults.StartCreateOrUpdateAsync(rgName, vaultName1, vaultParameters);
-                var vault1 = (await rawResult.WaitForCompletionAsync()).Value;
+                KeyVaultCreateOrUpdateContent parameters = new KeyVaultCreateOrUpdateContent(location, vaultProperties);
+                var keyVault = (await vaultCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, vaultName1, parameters)).Value;
 
                 Utilities.Log("Created key vault");
-                Utilities.PrintVault(vault1);
+                Utilities.PrintVault(keyVault);
 
                 // Authorize an application
 
                 Utilities.Log("Authorizing the application associated with the current service principal...");
 
-                var permissions = new Permissions
+                IEnumerable<KeyVaultAccessPolicy> policies = new List<KeyVaultAccessPolicy>();
                 {
-                    Keys = new KeyPermissions[] { new KeyPermissions("all") },
-                    Secrets = new SecretPermissions[] { new SecretPermissions("get"), new SecretPermissions("list") },
-                };
-                var accessPolicyEntry = new AccessPolicyEntry(tenantId, objectId, permissions);
-                var accessPolicyProperties = new VaultAccessPolicyProperties(new[] { accessPolicyEntry });
-                var accessPolicyParameters = new VaultAccessPolicyParameters(accessPolicyProperties);
+                    new KeyVaultAccessPolicy(tenantId, objectId, new IdentityAccessPermissions()
+                    {
+                        Keys =
+                        {
+                            IdentityAccessKeyPermission.All
+                        },
+                        Secrets =
+                        {
+                            IdentityAccessSecretPermission.Get,
+                            IdentityAccessSecretPermission.List
 
-                await vaults.UpdateAccessPolicyAsync(rgName, vaultName1, AccessPolicyUpdateKind.Add, accessPolicyParameters);
-                vault1 = (await vaults.GetAsync(rgName, vaultName1)).Value;
+                        }
+                    });
+                }
+                var UpdateProperties = new KeyVaultAccessPolicyProperties(policies);
+                var UpdateAccessPolicy = (await keyVault.UpdateAccessPolicyAsync(AccessPolicyUpdateKind.Add, new KeyVaultAccessPolicyParameters(UpdateProperties))).Value;
+                var UpdateKeyVault = await keyVault.UpdateAsync(new KeyVaultPatch()
+                {
+                    Properties = new KeyVaultPatchProperties()
+                    {
+                        AccessPolicies =
+                        {
+                            UpdateAccessPolicy.AccessPolicies.ElementAt(0)
+                        }
+                    }
+                });
 
                 Utilities.Log("Updated key vault");
-                Utilities.PrintVault(vault1);
+                Utilities.PrintVault(UpdateKeyVault.Value);
 
                 // Update a key vault
 
                 Utilities.Log("Update a key vault to enable deployments and add permissions to the application...");
 
-                permissions = new Permissions
+                var permissions = new IdentityAccessPermissions()
                 {
-                    Secrets = new SecretPermissions[] { new SecretPermissions("all") }
+                    Secrets =
+                    {
+                        IdentityAccessSecretPermission.All
+                    }
                 };
-                accessPolicyEntry = new AccessPolicyEntry(tenantId, objectId, permissions);
-                var vaultPatchProperties = new VaultPatchProperties
+                var patch = new KeyVaultPatch()
                 {
-                    EnabledForDeployment = true,
-                    EnabledForTemplateDeployment = true,
-                    AccessPolicies = new[] { accessPolicyEntry }
+                    Properties = new KeyVaultPatchProperties()
+                    {
+                        EnabledForDeployment = true,
+                        EnabledForTemplateDeployment = true,
+                        AccessPolicies =
+                        {
+                            new KeyVaultAccessPolicy(tenantId, objectId, permissions)
+                        }
+                    },
                 };
-                var vaultPatchParameters = new VaultPatchParameters
-                {
-                    Properties = vaultPatchProperties
-                };
-                await vaults.UpdateAsync(rgName, vaultName1, vaultPatchParameters);
-                vault1 = (await vaults.GetAsync(rgName, vaultName1)).Value;
+                var UpdateKeyVault2 = await keyVault.UpdateAsync(patch);
 
                 Utilities.Log("Updated key vault");
-                // Print the network security group
-                Utilities.PrintVault(vault1);
+
+                Utilities.PrintVault(UpdateKeyVault2);
 
                 // Create another key vault
 
                 Utilities.Log("Create another key vault");
 
-                permissions = new Permissions
+                permissions = new IdentityAccessPermissions()
                 {
-                    Keys = new KeyPermissions[] { new KeyPermissions("list"), new KeyPermissions("get"), new KeyPermissions("decrypt") },
-                    Secrets = new SecretPermissions[] { new SecretPermissions("get") },
+                    Keys =
+                    {
+                        IdentityAccessKeyPermission.Get
+                    },
+                    Secrets =
+                    {
+                        IdentityAccessSecretPermission.List,
+                        IdentityAccessSecretPermission.Get,
+                        IdentityAccessSecretPermission.Purge
+                    }
                 };
-                accessPolicyEntry = new AccessPolicyEntry(tenantId, objectId, permissions);
-                vaultProperties = new VaultProperties(tenantId, new Sku(SkuName.Standard))
+                //accessPolicyEntry = new AccessPolicyEntry(tenantId, objectId, permissions);
+                var vaultProperties2 = new KeyVaultProperties(tenantId, new KeyVaultSku(KeyVaultSkuFamily.A, KeyVaultSkuName.Standard))
                 {
-                    AccessPolicies = new[] { accessPolicyEntry }
+                    AccessPolicies =
+                    {
+                        new KeyVaultAccessPolicy(tenantId, objectId, permissions)
+                    }
                 };
-                vaultParameters = new VaultCreateOrUpdateParameters(region, vaultProperties);
+                var vaultParameters2 = new KeyVaultCreateOrUpdateContent(location, vaultProperties2);
 
-                rawResult = await vaults.StartCreateOrUpdateAsync(rgName, vaultName2, vaultParameters);
-                var vault2 = (await rawResult.WaitForCompletionAsync()).Value;
+                var rawResult = await vaultCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, vaultName2, vaultParameters2);
+                var keyvault2 = rawResult.Value;
 
                 Utilities.Log("Created key vault");
                 // Print the network security group
-                Utilities.PrintVault(vault2);
+                Utilities.PrintVault(keyvault2);
 
                 // List key vaults
 
                 Utilities.Log("Listing key vaults...");
 
-                foreach (var vault in (await vaults.ListByResourceGroupAsync(rgName).ToEnumerableAsync()))
+                await foreach (var vault in vaultCollection.GetAllAsync())
                 {
                     Utilities.PrintVault(vault);
                 }
 
                 // Delete key vaults
                 Utilities.Log("Deleting the key vaults");
-                await vaults.DeleteAsync(rgName, vaultName1);
-                await vaults.DeleteAsync(rgName, vaultName2);
+                await keyVault.DeleteAsync(Azure.WaitUntil.Completed);
+                await keyvault2.DeleteAsync(Azure.WaitUntil.Completed);
                 Utilities.Log("Deleted the key vaults");
             }
             finally
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {
@@ -163,9 +196,14 @@ namespace ManageKeyVault
             try
             {
                 // Authenticate
-                var credentials = new DefaultAzureCredential();
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
-                await RunSample(credentials);
+                await RunSample(client);
             }
             catch (Exception ex)
             {

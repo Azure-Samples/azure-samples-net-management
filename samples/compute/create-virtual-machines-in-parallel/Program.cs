@@ -214,7 +214,7 @@ namespace CreateVirtualMachinesInParallel
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {

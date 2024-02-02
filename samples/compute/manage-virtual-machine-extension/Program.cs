@@ -95,10 +95,11 @@ namespace ManageVirtualMachineExtension
             string pipDnsLabelWindowsVM = Utilities.RandomResourceName("rgPip2", 25);
             string location = AzureLocation.EastUS;
             string subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
+            ResourceGroupResource resourceGroup = null;
 
             try
             {
-                ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
+                resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
                 // Create a Linux VM with root (sudo) user
 
@@ -490,7 +491,7 @@ namespace ManageVirtualMachineExtension
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {

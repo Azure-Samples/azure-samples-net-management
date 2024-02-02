@@ -14,7 +14,6 @@ using Azure.ResourceManager.KeyVault.Models;
 using Azure.ResourceManager.Network.Models;
 using Azure.ResourceManager.Communication;
 using Azure.ResourceManager.Communication.Models;
-using Azure.ResourceManager.Communication;
 using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.EventHubs;
 using Azure.ResourceManager.KeyVault;
@@ -189,7 +188,7 @@ namespace Samples.Utilities
 
         public static void PrintVault(KeyVaultResource vault)
         {
-            var info = new StringBuilder().Append("Key Vault: ").Append(vault.Id)
+            var info = new StringBuilder().Append("Key Vault: ").Append(vault.Data.Id)
                 .Append("Name: ").Append(vault.Data.Name)
                 .Append("\n\tLocation: ").Append(vault.Data.Location)
                 .Append("\n\tSku: ").Append(vault.Data.Properties.Sku.Name).Append(" - ").Append(vault.Data.Properties.Sku.Family)

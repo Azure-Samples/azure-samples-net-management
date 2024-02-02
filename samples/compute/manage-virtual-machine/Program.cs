@@ -44,12 +44,12 @@ namespace ManageVirtualMachine
             var userName = "tirekicker";
             var password = "<password>";
             var subscriptionId = Environment.GetEnvironmentVariable("AZURE_SUBSCRIPTION_ID");
-
+            ResourceGroupResource resourceGroup = null;
             try
             {
                 String location = AzureLocation.WestUS2;
 
-                ResourceGroupResource resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
+                resourceGroup = (await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(location))).Value;
 
                 // Create a Windows virtual machine
                 var collection = resourceGroup.GetVirtualMachines();
@@ -306,7 +306,7 @@ namespace ManageVirtualMachine
             {
                 try
                 {
-                    await ResourceGroupHelper.DeleteResourceGroup(rgName);
+                    await resourceGroup.DeleteAsync(Azure.WaitUntil.Completed);
                 }
                 catch (NullReferenceException)
                 {
