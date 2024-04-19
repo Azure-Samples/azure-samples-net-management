@@ -215,7 +215,7 @@ namespace DeployUsingARMTemplate
                 var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
                 var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
                 var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
-                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                var subscriptionId = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
                 var rgName = Utilities.RandomResourceName("rgRSAT", 24);
                 var deploymentName = Utilities.RandomResourceName("dpRSAT", 24);
 
