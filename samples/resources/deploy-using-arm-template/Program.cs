@@ -4,6 +4,7 @@
 using Azure.Core;
 using Azure.Identity;
 using Azure.ResourceManager;
+using Azure.ResourceManager.Compute;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Resources.Models;
 using Samples.Utilities;
@@ -207,6 +208,20 @@ namespace DeployUsingARMTemplate
             }
         }
 
+        private static async Task GetAllPoliciesInSubscription(ArmClient client, string subscriptionId, string rgName)
+        {
+            var subscriptionResourceIdentifier = new ResourceIdentifier($"/subscriptions/{subscriptionId}");
+            var subscription = client.GetSubscriptionResource(subscriptionResourceIdentifier);
+            var subscriptionPolicyDefinitions = subscription.GetSubscriptionPolicyDefinitions();
+            var policyDefinitions = subscriptionPolicyDefinitions.GetAllAsync();
+
+            // Iterate through the policies in the subscription.
+            await foreach (var policyDefinition in policyDefinitions)
+            {
+                Utilities.Log("Policy Definition: " + policyDefinition.Data.DisplayName);
+            }
+        }
+
         public static async Task Main(string[] args)
         {
             try
@@ -216,6 +231,7 @@ namespace DeployUsingARMTemplate
                 var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
                 var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
                 var subscriptionId = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+
                 var rgName = Utilities.RandomResourceName("rgRSAT", 24);
                 var deploymentName = Utilities.RandomResourceName("dpRSAT", 24);
 
@@ -237,6 +253,8 @@ namespace DeployUsingARMTemplate
                 await DeleteDeploymentHistoryForResourceGroup(client, subscriptionId, rgName, deploymentName);
 
                 await DeleteResourceGroup(client, subscriptionId, rgName);
+
+                await GetAllPoliciesInSubscription(client, subscriptionId, rgName);
             }
             catch (Exception ex)
             {
