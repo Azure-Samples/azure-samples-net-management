@@ -222,6 +222,30 @@ namespace DeployUsingARMTemplate
             }
         }
 
+        private static async Task UpdateTagsOnResourceGroup(ArmClient client, string subscriptionId, string rgName, string deploymentName)
+        {
+            var subscriptionResourceIdentifier = new ResourceIdentifier($"/subscriptions/{subscriptionId}");
+
+            // Create resource group.
+            Utilities.Log("Creating a resource group with name: " + rgName);
+            ResourceGroupResource resourceGroup = (await client
+                .GetSubscriptionResource(subscriptionResourceIdentifier)
+                .GetResourceGroups()
+                .CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS))).Value;
+
+            // Update tags on the resource group.
+            var tags = new System.Collections.Generic.Dictionary<string, string>
+            {
+                { "key1", "value1" },
+                { "key2", "value2" }
+            };
+
+            // set the new tags on resource group.
+            resourceGroup = await resourceGroup.SetTagsAsync(tags);
+
+            Utilities.Log($"Tags {string.Join(", ", resourceGroup.Data.Tags)} set on resource group: " + resourceGroup.Data.Id);
+        }
+
         public static async Task Main(string[] args)
         {
             try
@@ -241,6 +265,8 @@ namespace DeployUsingARMTemplate
                 await DeployUsingARMTemplate(client, subscriptionId, rgName, deploymentName);
 
                 await GetAllDeployments(client, subscriptionId, rgName, deploymentName);
+
+                await UpdateTagsOnResourceGroup(client, subscriptionId, rgName, deploymentName);
 
                 await GetDeploymentForResourceGroup(client, subscriptionId, rgName, deploymentName);
 
